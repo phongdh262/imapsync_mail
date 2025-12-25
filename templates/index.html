@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAP Sync Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body
+    class="bg-gradient-to-br from-slate-50 to-blue-50/50 min-h-screen text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
+
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+
+        <!-- Header -->
+        <header class="mb-10 text-center relative z-10">
+            <h1
+                class="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-900 tracking-tight mb-3">
+                IMAP Sync Pro
+            </h1>
+            <p class="text-slate-500 text-lg">Batch Migration Tool with Advanced Filters</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center mb-10 relative z-10">
+            <div class="bg-white/80 p-1.5 rounded-2xl shadow-sm border border-slate-200 inline-flex backdrop-blur-sm">
+                <button onclick="switchTab('single')" id="tab-single"
+                    class="px-8 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm bg-slate-900 text-white">
+                    Single Sync
+                </button>
+                <button onclick="switchTab('bulk')" id="tab-bulk"
+                    class="px-8 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-900 transition-all duration-300">
+                    Bulk Sync (CSV)
+                </button>
+            </div>
+        </div>
+
+        <!-- Single Sync Panel -->
+        <div id="panel-single" class="tab-panel fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Source Card -->
+                <div
+                    class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 group hover:shadow-lg transition-all">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                        <span
+                            class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">1</span>
+                        Source Account
+                    </h2>
+                    <div class="space-y-4">
+                        <input type="text" id="src_host"
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none"
+                            placeholder="Host (e.g. imap.gmail.com)">
+                        <div class="grid grid-cols-3 gap-4">
+                            <input type="text" id="src_user"
+                                class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none"
+                                placeholder="Email / User">
+                            <input type="number" id="src_port" value="993"
+                                class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none text-center">
+                        </div>
+                        <input type="password" id="src_pass"
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none"
+                            placeholder="Password">
+                    </div>
+                </div>
+
+                <!-- Destination Card -->
+                <div
+                    class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 group hover:shadow-lg transition-all">
+                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                        <span
+                            class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm">2</span>
+                        Destination Account
+                    </h2>
+                    <div class="space-y-4">
+                        <input type="text" id="dest_host"
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                            placeholder="Host (e.g. imap.office.com)">
+                        <div class="grid grid-cols-3 gap-4">
+                            <input type="text" id="dest_user"
+                                class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                                placeholder="Email / User">
+                            <input type="number" id="dest_port" value="993"
+                                class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none text-center">
+                        </div>
+                        <input type="password" id="dest_pass"
+                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                            placeholder="Password">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Sync Advanced Options -->
+            <div class="w-full max-w-lg mx-auto mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <button class="flex items-center justify-between w-full text-sm font-bold text-slate-600 mb-2"
+                    onclick="document.getElementById('advConfig').classList.toggle('hidden')">
+                    <span>Advanced Options 🛠️</span>
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="advConfig" class="hidden space-y-4 pt-4 border-t border-slate-200 mt-2 fade-in">
+                    <div class="flex items-center gap-2 mb-4">
+                        <input type="checkbox" id="dryRun" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                        <label for="dryRun" class="text-sm font-medium text-slate-700 select-none">Dry Run Mode
+                            (Simulate only, no data copied)</label>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">SYNC FROM DATE</label>
+                            <input type="date" id="sinceDate"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">EXCLUDE FOLDERS</label>
+                            <input type="text" id="excludeFolders"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-500 outline-none"
+                                placeholder="Trash, Spam, Junk">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Sync Controls -->
+            <div class="flex flex-col items-center gap-8">
+                <div class="w-full max-w-sm">
+                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        <span>Concurrency</span>
+                        <span class="text-blue-600" id="concurrencyVal">1 Thread</span>
+                    </div>
+                    <input type="range" id="concurrency" min="1" max="10" value="1"
+                        class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="startSync"
+                        class="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
+                        Start Migration
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+
+                    <button id="stopSync"
+                        class="hidden px-10 py-4 bg-white text-red-500 font-bold rounded-2xl border-2 border-red-50 hover:bg-red-50 transition-all">
+                        Stop Process
+                    </button>
+                </div>
+            </div>
+
+            <!-- Single Sync Logs -->
+            <div id="logContainer" class="hidden mt-10 max-w-4xl mx-auto">
+                <div class="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
+                    <div class="px-5 py-3 bg-slate-800/50 border-b border-slate-700 flex justify-between items-center">
+                        <span class="text-xs font-mono text-slate-400">Terminal Output</span>
+                    </div>
+                    <div id="logs"
+                        class="p-6 h-80 overflow-y-auto font-mono text-xs md:text-sm text-slate-300 leading-relaxed scroll-smooth">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Sync Panel -->
+        <div id="panel-bulk" class="tab-panel hidden fade-in space-y-6">
+
+            <!-- Default Settings -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Default Configuration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                        <h4 class="text-xs font-bold text-blue-800 mb-3 uppercase">Default Source</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <input type="text" id="def_src_host"
+                                class="col-span-2 w-full px-3 py-2 rounded border border-blue-200 text-sm"
+                                placeholder="Host">
+                            <input type="number" id="def_src_port" value="993"
+                                class="w-full px-3 py-2 rounded border border-blue-200 text-sm text-center">
+                        </div>
+                    </div>
+                    <div class="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                        <h4 class="text-xs font-bold text-indigo-800 mb-3 uppercase">Default Destination</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <input type="text" id="def_dest_host"
+                                class="col-span-2 w-full px-3 py-2 rounded border border-indigo-200 text-sm"
+                                placeholder="Host">
+                            <input type="number" id="def_dest_port" value="993"
+                                class="w-full px-3 py-2 rounded border border-indigo-200 text-sm text-center">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Advanced Options -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                <button class="flex items-center justify-between w-full text-sm font-bold text-slate-600"
+                    onclick="document.getElementById('bulkAdvConfig').classList.toggle('hidden')">
+                    <span>🔧 Advanced Bulk Settings (Date Filter, Exclusions)</span>
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="bulkAdvConfig" class="hidden space-y-4 pt-4 border-t border-slate-100 mt-4 fade-in">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="bulkDryRun"
+                            class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                        <label for="bulkDryRun" class="text-sm font-medium text-slate-700 select-none">Dry Run (Simulate
+                            only)</label>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">SYNC FROM DATE</label>
+                            <input type="date" id="bulkSinceDate"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">EXCLUDE FOLDERS</label>
+                            <input type="text" id="bulkExcludeFolders"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500"
+                                placeholder="Trash, Spam">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CSV Input Area -->
+            <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Batch Import</h2>
+                        <p class="text-sm text-slate-500 mt-1">Upload .CSV or paste data.</p>
+                    </div>
+                    <label class="cursor-pointer group">
+                        <input type="file" id="csvFile" accept=".csv" class="hidden">
+                        <div
+                            class="px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors">
+                            Upload .CSV
+                        </div>
+                    </label>
+                </div>
+                <input type="text" class="w-full mb-2 hidden" id="dummyFocus"> <!-- Hack to prev focus jump -->
+                <textarea id="bulkInput" rows="5"
+                    class="w-full p-5 rounded-2xl bg-slate-900 text-slate-300 font-mono text-xs border-2 border-transparent focus:border-blue-500 focus:ring-0 outline-none transition-all resize-y"
+                    placeholder="user1,pass1,user1_new,pass2"></textarea>
+
+                <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Concurrency</span>
+                        <input type="number" id="batchConcurrency" value="3" min="1" max="5"
+                            class="w-12 bg-transparent font-bold text-center text-slate-700 outline-none">
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="downloadReport()"
+                            class="px-6 py-3 bg-green-50 text-green-700 font-bold rounded-xl hover:bg-green-100 border border-green-200 transition-all text-sm flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Report
+                        </button>
+                        <button onclick="parseAndLoad()"
+                            class="px-6 py-3 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 text-sm">
+                            Load Preview
+                        </button>
+                        <button onclick="stopBatch()" id="btnStopBatch"
+                            class="hidden px-8 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 border border-red-200 transition-all text-sm">
+                            Stop All
+                        </button>
+                        <button onclick="startBatch()" id="btnStartBatch"
+                            class="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                            disabled>
+                            Start Batch
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jobs Table -->
+            <div id="jobsContainer" class="hidden">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr
+                                class="bg-slate-50/50 border-b border-slate-100 text-xs text-slate-400 uppercase font-semibold">
+                                <th class="px-6 py-4">Source</th>
+                                <th class="px-6 py-4">Destination</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 w-1/3">Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobsTableBody" class="divide-y divide-slate-50 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOG MODAL -->
+    <div id="logModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
+                <div class="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
+                    <h3 class="font-bold text-slate-800" id="modalTitle">Logs</h3>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+                <div id="modalLogContent"
+                    class="flex-1 overflow-y-auto bg-slate-900 p-6 font-mono text-xs text-slate-300"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- UTILS ---
+        const generateUUID = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+
+        function formatIMAPDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${d.getDate()}-${months[d.getMonth()]}-${d.getFullYear()}`;
+        }
+
+        // --- TABS & UI ---
+        document.getElementById('csvFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) { document.getElementById('bulkInput').value = e.target.result; };
+            reader.readAsText(file);
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            const sBtn = document.getElementById('tab-single');
+            const bBtn = document.getElementById('tab-bulk');
+            if (tab === 'single') {
+                sBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm bg-slate-900 text-white";
+                bBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-900";
+            } else {
+                bBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm bg-slate-900 text-white";
+                sBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-900";
+            }
+        }
+
+        // --- SINGLE SYNC ---
+        const startBtn = document.getElementById('startSync');
+        const stopBtn = document.getElementById('stopSync');
+        const logsDiv = document.getElementById('logs');
+        const concurrencyInput = document.getElementById('concurrency');
+        let currentSyncId = null;
+
+        concurrencyInput.addEventListener('input', (e) => {
+            document.getElementById('concurrencyVal').textContent = `${e.target.value} Thread${e.target.value > 1 ? 's' : ''}`;
+        });
+
+        function appendLog(msg, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'text-red-400 mb-1 border-l-2 border-red-500 pl-2' : 'mb-1 border-l-2 border-slate-700 pl-2';
+            div.textContent = msg;
+            logsDiv.appendChild(div);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        startBtn.addEventListener('click', async () => {
+            const data = {
+                src_host: document.getElementById('src_host').value,
+                src_port: document.getElementById('src_port').value,
+                src_user: document.getElementById('src_user').value,
+                src_pass: document.getElementById('src_pass').value,
+                dest_host: document.getElementById('dest_host').value,
+                dest_port: document.getElementById('dest_port').value,
+                dest_user: document.getElementById('dest_user').value,
+                dest_pass: document.getElementById('dest_pass').value,
+                concurrency: concurrencyInput.value,
+                sync_id: generateUUID(),
+                // NEW ADVANCED PARAMS
+                dry_run: document.getElementById('dryRun').checked,
+                since_date: formatIMAPDate(document.getElementById('sinceDate').value),
+                exclude_folders: document.getElementById('excludeFolders').value
+            };
+            currentSyncId = data.sync_id;
+
+            if (!data.src_host || !data.src_user || !data.src_pass) { alert("Missing config!"); return; }
+
+            startBtn.disabled = true; startBtn.style.opacity = '0.5';
+            stopBtn.classList.remove('hidden');
+            document.getElementById('logContainer').classList.remove('hidden');
+            logsDiv.innerHTML = '';
+
+            if (data.dry_run) appendLog(">>> DRY RUN MODE: No data will be transferred.", false);
+            appendLog("Connecting...", false);
+
+            await runSyncStream(data, (msg, isErr) => appendLog(msg, isErr), () => { });
+
+            startBtn.disabled = false; startBtn.style.opacity = '1';
+            stopBtn.classList.add('hidden');
+        });
+
+        stopBtn.addEventListener('click', async () => {
+            if (currentSyncId) await fetch('/api/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sync_id: currentSyncId }) });
+        });
+
+        async function runSyncStream(data, logCtx, progCtx) {
+            try {
+                const response = await fetch('/api/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    const lines = decoder.decode(value).split('\n\n');
+                    lines.forEach(line => {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const p = JSON.parse(line.replace('data: ', ''));
+                                logCtx(p.message, p.is_error);
+                                if (p.progress !== undefined) progCtx(p.progress);
+                            } catch (e) { }
+                        }
+                    });
+                }
+            } catch (err) { logCtx("Network Error: " + err, true); }
+        }
+
+        // --- BULK SYNC ---
+        let bulkJobs = [];
+        let isBatchRunning = false;
+        let shouldStopBatch = false; // Flag for Stop All
+
+        function inferHost(email) {
+            if (!email) return 'imap.gmail.com';
+            if (email.includes('@gmail')) return 'imap.gmail.com';
+            if (email.includes('@outlook') || email.includes('@office')) return 'outlook.office365.com';
+            const parts = email.split('@');
+            return parts.length > 1 ? `imap.${parts[1]}` : 'imap.gmail.com';
+        }
+
+        function parseCSVLine(str) {
+            const arr = []; let quote = false; let col = '';
+            for (let c of str) {
+                if (c === '"') { quote = !quote; continue; }
+                if (c === ',' && !quote) { arr.push(col); col = ''; continue; }
+                col += c;
+            }
+            arr.push(col); return arr.map(s => s.trim());
+        }
+
+        function parseAndLoad() {
+            const text = document.getElementById('bulkInput').value.trim();
+            const defSrcHost = document.getElementById('def_src_host').value.trim();
+            const defDestHost = document.getElementById('def_dest_host').value.trim();
+
+            bulkJobs = [];
+            text.split('\n').forEach(line => {
+                if (!line.trim() || line.trim().startsWith('#')) return;
+                const p = parseCSVLine(line.trim());
+                let job = { status: 'Pending', progress: 0, id: generateUUID(), fullLogs: [] };
+
+                if (p.length >= 8) {
+                    Object.assign(job, { src_host: p[0], src_port: p[1], src_user: p[2], src_pass: p[3], dest_host: p[4], dest_port: p[5], dest_user: p[6], dest_pass: p[7] });
+                } else if (p.length >= 4) {
+                    Object.assign(job, {
+                        src_host: defSrcHost || inferHost(p[0]), src_port: '993', src_user: p[0], src_pass: p[1],
+                        dest_host: defDestHost || inferHost(p[2]), dest_port: '993', dest_user: p[2], dest_pass: p[3]
+                    });
+                } else return;
+                bulkJobs.push(job);
+            });
+
+            if (bulkJobs.length > 0) {
+                renderJobs();
+                document.getElementById('jobsContainer').classList.remove('hidden');
+                document.getElementById('btnStartBatch').disabled = false;
+            }
+        }
+
+        function renderJobs() {
+            const tbody = document.getElementById('jobsTableBody');
+            tbody.innerHTML = '';
+            bulkJobs.forEach((job) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors group border-b border-slate-50";
+                tr.innerHTML = `
+                    <td class="px-6 py-4"><div class="font-bold text-slate-700 truncate w-32" title="${job.src_user}">${job.src_user}</div><div class="text-xs text-slate-400">${job.src_host}</div></td>
+                    <td class="px-6 py-4"><div class="font-bold text-slate-700 truncate w-32" title="${job.dest_user}">${job.dest_user}</div><div class="text-xs text-slate-400">${job.dest_host}</div></td>
+                    <td class="px-6 py-4">
+                        <span id="status-${job.id}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 mb-1">${job.status}</span>
+                        <div id="lastlog-${job.id}" class="text-xs text-slate-400 truncate w-32 cursor-pointer hover:text-blue-600" onclick="viewLogs('${job.id}')">${job.lastLog || 'Waiting...'}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden"><div id="prog-${job.id}" class="bg-blue-500 h-full rounded-full transition-all" style="width: ${job.progress}%"></div></div>
+                            <button onclick="viewLogs('${job.id}')" class="text-slate-400 hover:text-blue-600">Logs</button>
+                             <button onclick="stopJob('${job.id}')" class="text-red-300 hover:text-red-500 ${job.status !== 'Running' ? 'hidden' : ''}" id="stop-${job.id}">Stop</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function startBatch() {
+            if (isBatchRunning) return; isBatchRunning = true; shouldStopBatch = false;
+            document.getElementById('btnStartBatch').disabled = true;
+            document.getElementById('btnStopBatch').classList.remove('hidden');
+
+            // CAPTURE BULK SETTINGS ONLY ONCE AT START
+            const bulkSettings = {
+                dry_run: document.getElementById('bulkDryRun').checked,
+                since_date: formatIMAPDate(document.getElementById('bulkSinceDate').value),
+                exclude_folders: document.getElementById('bulkExcludeFolders').value
+            };
+
+            const batchConcurrent = parseInt(document.getElementById('batchConcurrency').value) || 2;
+            let idx = 0, active = 0;
+
+            const runNext = async () => {
+                if (shouldStopBatch) {
+                    // If unexpected stop request (though handled below), just ensure we don't start new
+                    if (active === 0) cleanupBatch();
+                    return;
+                }
+
+                if (idx >= bulkJobs.length) {
+                    if (active === 0) cleanupBatch();
+                    return;
+                }
+                const jobIdx = idx++; active++;
+                const job = bulkJobs[jobIdx];
+
+                job.status = 'Running';
+                const stEl = document.getElementById(`status-${job.id}`);
+                if (stEl) { stEl.textContent = 'Running'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-600 mb-1"; }
+                document.getElementById(`stop-${job.id}`).classList.remove('hidden');
+
+                // MERGE JOB DATA WITH ADV MODES
+                const jobData = { ...job, concurrency: 5, sync_id: job.id, ...bulkSettings };
+
+                await runSyncStream(jobData,
+                    (msg, isErr) => {
+                        if (job.status === 'Stopped') return; // Ignore logs if stopped
+
+                        job.lastLog = msg; job.fullLogs.push({ msg, isError: isErr });
+                        const logEl = document.getElementById(`lastlog-${job.id}`);
+                        if (logEl) logEl.textContent = msg;
+
+                        const modal = document.getElementById('logModal');
+                        if (!modal.classList.contains('hidden')) {
+                            const el = document.getElementById('modalLogContent');
+                            const d = document.createElement('div'); d.className = isErr ? "text-red-400 mb-1" : "text-slate-300 mb-1"; d.textContent = msg;
+                            el.appendChild(d); el.scrollTop = el.scrollHeight;
+                        }
+
+                        // Only mark as Failed if strictly Critical
+                        if (isErr && msg.includes('Critical Error')) {
+                            job.status = 'Error';
+                            if (stEl) { stEl.textContent = 'Failed'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 mb-1"; }
+                        }
+                    },
+                    (prog) => {
+                        if (job.status === 'Stopped') return;
+
+                        job.progress = prog;
+                        const progEl = document.getElementById(`prog-${job.id}`);
+                        if (progEl) progEl.style.width = prog + '%';
+                        if (prog === 100) {
+                            job.status = 'Done';
+                            if (stEl) { stEl.textContent = 'Done'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-600 mb-1"; }
+                            document.getElementById(`stop-${job.id}`).classList.add('hidden');
+                        }
+                    }
+                );
+
+                active--;
+                if (shouldStopBatch) {
+                    // Check again if we should stop
+                    if (active === 0) cleanupBatch();
+                } else {
+                    runNext();
+                }
+            };
+
+            for (let i = 0; i < batchConcurrent; i++) runNext();
+        }
+
+        function cleanupBatch() {
+            isBatchRunning = false;
+            document.getElementById('btnStartBatch').disabled = false;
+            document.getElementById('btnStopBatch').classList.add('hidden');
+            if (shouldStopBatch) alert("Batch Stopped!"); else alert("Done!");
+        }
+
+        async function stopBatch() {
+            if (!confirm("Stop all running jobs?")) return;
+            shouldStopBatch = true; // Prevent new jobs
+
+            // Stop all currently running jobs
+            const activeJobIds = bulkJobs.filter(j => j.status === 'Running').map(j => j.id);
+            for (let id of activeJobIds) {
+                stopJob(id, false); // false = don't confirm for each
+            }
+        }
+
+        // --- REPORT & MODAL ---
+        function downloadReport() {
+            if (!bulkJobs.length) return alert("No jobs.");
+            const header = ["Source", "Dest", "Status", "Last Log"];
+            const rows = bulkJobs.map(j => [j.src_user, j.dest_user, j.status, `"${j.lastLog}"`]);
+            const csv = "data:text/csv;charset=utf-8," + header.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "report.csv";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        function viewLogs(id) {
+            const job = bulkJobs.find(j => j.id === id); if (!job) return;
+            document.getElementById('modalTitle').textContent = `Logs: ${job.src_user}`;
+            const el = document.getElementById('modalLogContent');
+            el.innerHTML = job.fullLogs.map(l => `<div class="${l.isError ? 'text-red-400' : 'text-slate-300'} mb-1">${l.msg}</div>`).join('');
+            document.getElementById('logModal').classList.remove('hidden');
+            el.scrollTop = el.scrollHeight;
+        }
+        function closeModal() { document.getElementById('logModal').classList.add('hidden'); }
+        async function stopJob(id, ask = true) {
+            if (ask && !confirm("Stop this job?")) return;
+            try {
+                await fetch('/api/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sync_id: id }) });
+                // Mark as Stopped in UI immediately 
+                const job = bulkJobs.find(j => j.id === id);
+                if (job) {
+                    job.status = 'Stopped';
+                    job.lastLog = 'Stopped by user';
+                    const stEl = document.getElementById(`status-${id}`);
+                    if (stEl) { stEl.textContent = 'Stopped'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 mb-1"; }
+                    document.getElementById(`stop-${id}`).classList.add('hidden');
+                }
+            } catch (e) { }
+        }
+    </script>
+
+</body>
+
+</html>
