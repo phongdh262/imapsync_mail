@@ -101,19 +101,34 @@ def worker(q, src_conf, dest_conf, stop_event, log_queue, dry_run=False):
                     break
 
                 if res != 'OK':
-                    log_queue.put({'message': f'Fail fetch {folder}:{email_id.decode()}', 'is_error': True})
+                    # Decode safely outside f-string
+                    try:
+                        eid_str = email_id.decode()
+                    except:
+                        eid_str = str(email_id)
+                        
+                    log_queue.put({'message': f'Fail fetch {folder}:{eid_str}', 'is_error': True})
                 else:
+                    try:
+                        eid_str = email_id.decode()
+                    except:
+                        eid_str = str(email_id)
+
                     if dry_run:
                         # Just simulate
-                        log_queue.put({'message': f'[DRY] Would sync {folder}:{email_id.decode()}', 'increment': 1})
+                        log_queue.put({'message': f'[DRY] Would sync {folder}:{eid_str}', 'increment': 1})
                     else:
                         raw_email = msg_data[0][1]
                         # Append
                         retry_operation(lambda: dest_mail.append(current_dest_folder, None, None, raw_email))
-                        log_queue.put({'message': f'Synced {folder}:{email_id.decode()}', 'increment': 1})
+                        log_queue.put({'message': f'Synced {folder}:{eid_str}', 'increment': 1})
             
             except Exception as e:
-                log_queue.put({'message': f'Err {folder}:{email_id.decode()} - {str(e)}', 'is_error': True})
+                try:
+                    eid_str = email_id.decode()
+                except:
+                    eid_str = str(email_id)
+                log_queue.put({'message': f'Err {folder}:{eid_str} - {str(e)}', 'is_error': True})
             finally:
                 q.task_done()
         
