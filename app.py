@@ -99,7 +99,7 @@ def worker(q, src_conf, dest_conf, stop_event, log_queue, dry_run=False):
                          target_folders.append(clean_name)
                 else:
                     # Fallback parsing
-                    parts = decoded_entry.split(' "')
+                    parts = decoded.split(' "')
                     if len(parts) > 1:
                         name = parts[-1].rstrip('"')
                         target_folders.append(name)
@@ -239,7 +239,7 @@ def sync_emails():
 
     return Response(stream_with_context(sync_process(
         sync_id, concurrency, src_conf, dest_conf, options
-    )), mimetype='text/event-stream')
+    )), mimetype='text/event-stream', headers={'X-Accel-Buffering': 'no', 'Cache-Control': 'no-cache'})
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)
