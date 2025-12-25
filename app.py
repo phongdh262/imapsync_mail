@@ -107,7 +107,7 @@ def worker(q, src_conf, dest_conf, stop_event, log_queue, dry_run=False):
                     except:
                         eid_str = str(email_id)
                         
-                    log_queue.put({'message': f'Fail fetch {folder}:{eid_str}', 'is_error': True})
+                    log_queue.put({'message': 'Fail fetch {}:{}'.format(folder, eid_str), 'is_error': True})
                 else:
                     try:
                         eid_str = email_id.decode()
@@ -116,19 +116,19 @@ def worker(q, src_conf, dest_conf, stop_event, log_queue, dry_run=False):
 
                     if dry_run:
                         # Just simulate
-                        log_queue.put({'message': f'[DRY] Would sync {folder}:{eid_str}', 'increment': 1})
+                        log_queue.put({'message': '[DRY] Would sync {}:{}'.format(folder, eid_str), 'increment': 1})
                     else:
                         raw_email = msg_data[0][1]
                         # Append
                         retry_operation(lambda: dest_mail.append(current_dest_folder, None, None, raw_email))
-                        log_queue.put({'message': f'Synced {folder}:{eid_str}', 'increment': 1})
+                        log_queue.put({'message': 'Synced {}:{}'.format(folder, eid_str), 'increment': 1})
             
             except Exception as e:
                 try:
                     eid_str = email_id.decode()
                 except:
                     eid_str = str(email_id)
-                log_queue.put({'message': f'Err {folder}:{eid_str} - {str(e)}', 'is_error': True})
+                log_queue.put({'message': 'Err {}:{} - {}'.format(folder, eid_str, str(e)), 'is_error': True})
             finally:
                 q.task_done()
         
@@ -137,7 +137,7 @@ def worker(q, src_conf, dest_conf, stop_event, log_queue, dry_run=False):
              dest_mail.logout()
     
     except Exception as e:
-        log_queue.put({'message': f'Worker Error: {str(e)}', 'is_error': True})
+        log_queue.put({'message': 'Worker Error: {}'.format(str(e)), 'is_error': True})
 
 def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
     """
@@ -147,7 +147,7 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
     since_date = options.get('since_date', '') # Format: DD-Mon-YYYY
     exclude_folders = options.get('exclude_folders', []) # List of strings
 
-    yield f"data: {json.dumps({'message': 'Starting process...', 'progress': 0})}\n\n"
+    yield "data: {}\n\n".format(json.dumps({'message': 'Starting process...', 'progress': 0}))
     
     stop_event = threading.Event()
     job_queue = queue.Queue()
@@ -157,7 +157,7 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
     active_jobs[sync_id] = {'stop_event': stop_event, 'queue': job_queue}
 
     try:
-        yield f"data: {json.dumps({'message': 'Connecting to source...'})}\n\n"
+        yield "data: {}\n\n".format(json.dumps({'message': 'Connecting to source...'}))
         
         # 1. List Folders & IDs
         ssl_ctx = get_ssl_context()
@@ -205,7 +205,7 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
             
             try:
                 # Need to quote folder name if it has spaces or special chars
-                quoted_folder = f'"{folder}"' if ' ' in folder or '[' in folder else folder
+                quoted_folder = '"{}"'.format(folder) if ' ' in folder or '[' in folder else folder
                 
                 resp, _ = src_mail.select(quoted_folder, readonly=True)
                 if resp != 'OK':
@@ -214,12 +214,12 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
                 
                 # STRICT CHECK: If still not OK, skip this folder.
                 if resp != 'OK':
-                    yield f"data: {json.dumps({'message': f'Skip folder {folder}: Not selectable', 'is_error': True})}\n\n"
+                    yield "data: {}\n\n".format(json.dumps({'message': 'Skip folder {}: Not selectable'.format(folder), 'is_error': True}))
                     continue
 
                 search_crit = 'ALL'
                 if since_date:
-                    search_crit = f'(SINCE "{since_date}")'
+                    search_crit = '(SINCE "{}")'.format(since_date)
                 
                 typ, messages = src_mail.search(None, search_crit)
                 
@@ -227,18 +227,18 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
                     ids = messages[0].split()
                     count = len(ids)
                     if count > 0:
-                        yield f"data: {json.dumps({'message': f'Folder {folder}: Found {count} emails.'})}\n\n"
+                        yield "data: {}\n\n".format(json.dumps({'message': 'Folder {}: Found {} emails.'.format(folder, count)}))
                         total_emails += count
                         for eid in ids:
                             job_queue.put((folder, eid))
             except Exception as e:
-                 yield f"data: {json.dumps({'message': f'Skip folder {folder}: {str(e)}', 'is_error': True})}\n\n"
+                 yield "data: {}\n\n".format(json.dumps({'message': 'Skip folder {}: {}'.format(folder, str(e)), 'is_error': True}))
 
         if total_emails == 0:
-             yield f"data: {json.dumps({'message': 'No emails found matching criteria.', 'progress': 100})}\n\n"
+             yield "data: {}\n\n".format(json.dumps({'message': 'No emails found matching criteria.', 'progress': 100}))
              return
 
-        yield f"data: {json.dumps({'message': f'Total {total_emails} emails. Starting {concurrency} threads...'})}\n\n"
+        yield "data: {}\n\n".format(json.dumps({'message': 'Total {} emails. Starting {} threads...'.format(total_emails, concurrency)}))
         
         # 3. Start Workers
         num_threads = min(concurrency, 10) 
@@ -256,7 +256,7 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
         
         while any(t.is_alive() for t in threads) or not log_queue.empty():
             if stop_event.is_set():
-                 yield f"data: {json.dumps({'message': 'Stopped by user.', 'is_error': True})}\n\n"
+                 yield "data: {}\n\n".format(json.dumps({'message': 'Stopped by user.', 'is_error': True}))
                  break
 
             while not log_queue.empty():
@@ -265,19 +265,19 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
                     if 'increment' in log_item:
                         processed_count += 1
                         progress = int((processed_count / total_emails) * 100)
-                        yield f"data: {json.dumps({'message': log_item['message'], 'progress': progress})}\n\n"
+                        yield "data: {}\n\n".format(json.dumps({'message': log_item['message'], 'progress': progress}))
                     else:
-                        yield f"data: {json.dumps(log_item)}\n\n"
+                        yield "data: {}\n\n".format(json.dumps(log_item))
                 except queue.Empty:
                     break
             
             time.sleep(0.1)
         
         if job_queue.empty() and not stop_event.is_set():
-            yield f"data: {json.dumps({'message': 'Sync completed!', 'progress': 100})}\n\n"
+            yield "data: {}\n\n".format(json.dumps({'message': 'Sync completed!', 'progress': 100}))
 
     except Exception as e:
-        yield f"data: {json.dumps({'message': f'Critical Error: {str(e)}', 'is_error': True})}\n\n"
+        yield "data: {}\n\n".format(json.dumps({'message': 'Critical Error: {}'.format(str(e)), 'is_error': True}))
     finally:
         stop_event.set()
         if sync_id in active_jobs:
@@ -295,7 +295,7 @@ def stop_sync():
         if q:
             with q.mutex:
                 q.queue.clear()
-        logging.info(f"Stop signal received for {sync_id}. Queue cleared.")
+        logging.info("Stop signal received for {}. Queue cleared.".format(sync_id))
         return jsonify({'status': 'success'})
     return jsonify({'status': 'error', 'message': 'Job not found'}), 404
 
