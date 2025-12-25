@@ -268,7 +268,9 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
         processed_count = 0
         
         while any(t.is_alive() for t in threads) or not log_queue.empty():
-            if stop_event.is_set():
+            import os
+            # Check File Flag for robustness
+            if stop_event.is_set() or os.path.exists('stop_{}.flag'.format(sync_id)):
                  yield "data: {}\n\n".format(json.dumps({'message': 'Stopped by user.', 'is_error': True}))
                  break
 
@@ -286,20 +288,36 @@ def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
             
             time.sleep(0.1)
         
-        if job_queue.empty() and not stop_event.is_set():
+        if job_queue.empty() and not stop_event.is_set() and not os.path.exists('stop_{}.flag'.format(sync_id)):
             yield "data: {}\n\n".format(json.dumps({'message': 'Sync completed!', 'progress': 100}))
 
     except Exception as e:
         yield "data: {}\n\n".format(json.dumps({'message': 'Critical Error: {}'.format(str(e)), 'is_error': True}))
     finally:
+        import os
         stop_event.set()
         if sync_id in active_jobs:
             del active_jobs[sync_id]
+        # Cleanup stop file
+        if os.path.exists('stop_{}.flag'.format(sync_id)):
+            try:
+                os.remove('stop_{}.flag'.format(sync_id))
+            except:
+                pass
 
+@app.route('/api/stop', methods=['POST'])
 @app.route('/api/stop', methods=['POST'])
 def stop_sync():
     data = request.json
     sync_id = data.get('sync_id')
+    
+    # Create STOP FLAG file for robustness across multiple workers
+    import os
+    try:
+        open('stop_{}.flag'.format(sync_id), 'w').close()
+    except:
+        pass
+
     job = active_jobs.get(sync_id)
     if job:
         job['stop_event'].set()
@@ -309,8 +327,9 @@ def stop_sync():
             with q.mutex:
                 q.queue.clear()
         logging.info("Stop signal received for {}. Queue cleared.".format(sync_id))
-        return jsonify({'status': 'success'})
-    return jsonify({'status': 'error', 'message': 'Job not found'}), 404
+    
+    # Return success always to ensure UI updates
+    return jsonify({'status': 'success'})
 
 @app.route('/api/sync', methods=['POST'])
 def sync_emails():

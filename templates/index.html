@@ -579,8 +579,10 @@
                 if (stEl) { stEl.textContent = 'Running'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-600 mb-1"; }
                 document.getElementById(`stop-${job.id}`).classList.remove('hidden');
 
+                // Get concurrency from slider (default 2 if not found)
+                const threadConcurrency = parseInt(document.getElementById('concurrencyRange').value) || 2;
                 // MERGE JOB DATA WITH ADV MODES
-                const jobData = { ...job, concurrency: 5, sync_id: job.id, ...bulkSettings };
+                const jobData = { ...job, concurrency: threadConcurrency, sync_id: job.id, ...bulkSettings };
 
                 await runSyncStream(jobData,
                     (msg, isErr) => {
