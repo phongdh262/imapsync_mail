@@ -41,7 +41,13 @@ def retry_operation(func, retries=3, delay=2):
             last_exception = e
             time.sleep(delay)
             # Re-raise if it's the last attempt
-    raise last_exception
+def create_imap_ssl(host, port, ssl_ctx):
+    """Helper to create IMAP4_SSL connection compatible with older Python."""
+    try:
+        return imaplib.IMAP4_SSL(host, int(port), ssl_context=ssl_ctx)
+    except TypeError:
+        # Fallback for Python versions that don't support ssl_context in imaplib
+        return imaplib.IMAP4_SSL(host, int(port))
 
 def worker(q, src_conf, dest_conf, stop_event, log_queue, dry_run=False):
     """
@@ -51,120 +57,20 @@ def worker(q, src_conf, dest_conf, stop_event, log_queue, dry_run=False):
         ssl_ctx = get_ssl_context()
         
         # Create separate connections for each thread
-        src_mail = imaplib.IMAP4_SSL(src_conf['host'], int(src_conf['port']), ssl_context=ssl_ctx)
+        src_mail = create_imap_ssl(src_conf['host'], src_conf['port'], ssl_ctx)
         src_mail.login(src_conf['user'], src_conf['pass'])
         
         dest_mail = None
         if not dry_run:
-            dest_mail = imaplib.IMAP4_SSL(dest_conf['host'], int(dest_conf['port']), ssl_context=ssl_ctx)
+            dest_mail = create_imap_ssl(dest_conf['host'], dest_conf['port'], ssl_ctx)
             dest_mail.login(dest_conf['user'], dest_conf['pass'])
-
-        current_src_folder = None
-        current_dest_folder = None
-
-        while not stop_event.is_set():
-            try:
-                # Get (folder_name, email_id) from queue
-                task = q.get(timeout=1)
-            except queue.Empty:
-                break
-
-            folder, email_id = task
-
-            try:
-                if stop_event.is_set():
-                    q.task_done()
-                    break
-                
-                # Switch folder if needed
-                if folder != current_src_folder:
-                    retry_operation(lambda: src_mail.select(folder, readonly=True))
-                    current_src_folder = folder
-                
-                if not dry_run and folder != current_dest_folder:
-                    # Try to select, if fails allow create logic 
-                    try:
-                        dest_mail.select(folder)
-                    except:
-                        try:
-                            # Try create
-                            dest_mail.create(folder)
-                            dest_mail.select(folder)
-                        except:
-                            # Fallback to INBOX if folder creation fails or restricted
-                            dest_mail.select('INBOX')
-                    current_dest_folder = folder
-
-                # Fetch
-                res, msg_data = retry_operation(lambda: src_mail.fetch(email_id, '(RFC822)'))
-                
-                # AGGRESSIVE STOP CHECK
-                if stop_event.is_set():
-                    q.task_done()
-                    break
-
-                if res != 'OK':
-                    # Decode safely outside f-string
-                    try:
-                        eid_str = email_id.decode()
-                    except:
-                        eid_str = str(email_id)
-                        
-                    log_queue.put({'message': 'Fail fetch {}:{}'.format(folder, eid_str), 'is_error': True})
-                else:
-                    try:
-                        eid_str = email_id.decode()
-                    except:
-                        eid_str = str(email_id)
-
-                    if dry_run:
-                        # Just simulate
-                        log_queue.put({'message': '[DRY] Would sync {}:{}'.format(folder, eid_str), 'increment': 1})
-                    else:
-                        raw_email = msg_data[0][1]
-                        # Append
-                        retry_operation(lambda: dest_mail.append(current_dest_folder, None, None, raw_email))
-                        log_queue.put({'message': 'Synced {}:{}'.format(folder, eid_str), 'increment': 1})
             
-            except Exception as e:
-                try:
-                    eid_str = email_id.decode()
-                except:
-                    eid_str = str(email_id)
-                log_queue.put({'message': 'Err {}:{} - {}'.format(folder, eid_str, str(e)), 'is_error': True})
-            finally:
-                q.task_done()
-        
-        src_mail.logout()
-        if dest_mail:
-             dest_mail.logout()
-    
-    except Exception as e:
-        log_queue.put({'message': 'Worker Error: {}'.format(str(e)), 'is_error': True})
-
-def sync_process(sync_id, concurrency, src_conf, dest_conf, options):
-    """
-    Generator function to yield status updates.
-    """
-    dry_run = options.get('dry_run', False)
-    since_date = options.get('since_date', '') # Format: DD-Mon-YYYY
-    exclude_folders = options.get('exclude_folders', []) # List of strings
-
-    yield "data: {}\n\n".format(json.dumps({'message': 'Starting process...', 'progress': 0}))
-    
-    stop_event = threading.Event()
-    job_queue = queue.Queue()
-    log_queue = queue.Queue()
-    
-    # Store queue in active_jobs
-    active_jobs[sync_id] = {'stop_event': stop_event, 'queue': job_queue}
-
-    try:
+# ... (inside sync_process) ...
         yield "data: {}\n\n".format(json.dumps({'message': 'Connecting to source...'}))
         
         # 1. List Folders & IDs
         ssl_ctx = get_ssl_context()
-        src_mail = imaplib.IMAP4_SSL(src_conf['host'], int(src_conf['port']), ssl_context=ssl_ctx)
+        src_mail = create_imap_ssl(src_conf['host'], src_conf['port'], ssl_ctx)
         src_mail.login(src_conf['user'], src_conf['pass'])
         
         # Get list of folders
