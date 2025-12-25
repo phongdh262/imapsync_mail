@@ -4,7 +4,10 @@ from flask import Flask, render_template, request, Response, stream_with_context
 import json
 import logging
 import threading
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import time
 import socket
 from datetime import datetime
