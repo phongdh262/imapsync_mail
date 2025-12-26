@@ -223,8 +223,7 @@
                         <div class="flex items-center justify-center -my-6 z-10 relative pointer-events-none">
                             <div
                                 class="w-10 h-10 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center shadow-lg">
-                                <svg id="syncArrow"
-                                    class="w-5 h-5 text-slate-400 transition-all duration-500 transform rotate-90"
+                                <svg id="syncArrow" class="w-5 h-5 text-slate-400 transition-all duration-500 transform"
                                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -398,7 +397,7 @@
                         <div class="flex items-center justify-center -my-6 z-10 relative pointer-events-none">
                             <div
                                 class="w-8 h-8 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center shadow-lg">
-                                <svg class="w-4 h-4 text-slate-500 transform rotate-90" fill="none" viewBox="0 0 24 24"
+                                <svg class="w-4 h-4 text-slate-500 transform" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -526,6 +525,21 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- WARNING MESSAGE (SINGLE SYNC) -->
+                        <div class="px-6 py-3 bg-amber-500/10 border-b border-amber-500/20 flex items-start gap-3">
+                            <div class="shrink-0 mt-0.5">
+                                <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="text-xs text-amber-200/80 font-medium leading-relaxed">
+                                <strong class="text-amber-400">Không đóng tab trình duyệt:</strong> Mặc dù hệ thống có
+                                cơ chế
+                                khôi phục, nhưng để ổn định nhất, hãy giữ tab trình duyệt mở khi đang chạy Batch lớn.
+                            </div>
+                        </div>
                         <div id="logs"
                             class="p-6 overflow-y-auto font-mono text-xs md:text-sm text-slate-300 leading-relaxed scroll-smooth flex-1 bg-slate-900/80 shadow-inner">
                             <div class="text-slate-500 italic select-none">Waiting for process start...</div>
@@ -548,6 +562,21 @@
                                 </svg>
                                 Export Report
                             </button>
+                        </div>
+                        <!-- WARNING MESSAGE -->
+                        <div class="px-6 py-3 bg-amber-500/10 border-b border-amber-500/20 flex items-start gap-3">
+                            <div class="shrink-0 mt-0.5">
+                                <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div class="text-xs text-amber-200/80 font-medium leading-relaxed">
+                                <strong class="text-amber-400">Không đóng tab trình duyệt:</strong> Mặc dù hệ thống có
+                                cơ chế
+                                khôi phục, nhưng để ổn định nhất, hãy giữ tab trình duyệt mở khi đang chạy Batch lớn.
+                            </div>
                         </div>
                         <div id="jobsContainer" class="hidden flex-1 flex flex-col overflow-hidden">
                             <div class="overflow-y-auto flex-1">

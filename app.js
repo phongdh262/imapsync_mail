@@ -207,14 +207,16 @@ app.post('/api/sync', async (req, res) => {
         secure: isSrcSecure,
         auth: { user: src_user, pass: src_pass },
         logger: (log) => {
-            // Simple timestamp logger
+            // Verbose logging
             const time = new Date().toISOString().split('T')[1].slice(0, -1);
-            console.log(`[SRC-LOG ${time}] ${log.msg}`);
+            console.log(`[SRC-${log.level.toUpperCase()} ${time}] ${log.msg}`);
+            if (log.error) console.error(`[SRC-ERR]`, log.error);
         },
         tls: { rejectUnauthorized: false },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 30000
+        emitLogs: true,
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 60000
     });
     clients.push(clientSrc);
     clientSrc.on('error', (err) => {
@@ -275,13 +277,13 @@ app.post('/api/sync', async (req, res) => {
         if (signal.aborted) throw new Error("Stopped by user before connection.");
 
         sendLog(sync_id, res, "Connecting to source...", false, 0);
-        await withTimeout(clientSrc.connect(), 30000, "Source", signal);
+        await withTimeout(clientSrc.connect(), 90000, "Source", signal);
 
         if (signal.aborted) throw new Error("Stopped by user.");
 
         if (!isDryRun) {
             sendLog(sync_id, res, "Connecting to destination...");
-            await withTimeout(clientDest.connect(), 30000, "Destination", signal);
+            await withTimeout(clientDest.connect(), 90000, "Destination", signal);
         }
 
         if (signal.aborted) throw new Error("Stopped by user.");
@@ -354,6 +356,7 @@ app.post('/api/sync', async (req, res) => {
             if (signal.aborted) break;
 
             try {
+                sendLog(sync_id, res, `Scanning folder: ${folder}...`);
                 const lock = await clientSrc.getMailboxLock(folder);
                 try {
                     const searchCriteria = since_date ? { since: new Date(since_date) } : { all: true };
