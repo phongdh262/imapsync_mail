@@ -170,7 +170,7 @@ app.post('/api/test-connection', async (req, res) => {
     }
 });
 
-// Route: Start Sync
+// Route: Start Sync (Optimized: Parallel Connect + Merged Scan/Sync)
 app.post('/api/sync', async (req, res) => {
     const {
         sync_id,
@@ -182,113 +182,81 @@ app.post('/api/sync', async (req, res) => {
         exclude_folders = ''
     } = req.body;
 
-    // Safe Boolean Parsing (Handle "true" string vs true boolean)
+    // Safe Boolean Parsing
     const isSrcSecure = String(src_secure) === 'true' || src_secure === true;
     const isDestSecure = String(dest_secure) === 'true' || dest_secure === true;
     const isDryRun = String(dry_run) === 'true' || dry_run === true;
 
-    // DEBUG: Log incoming params to check for type issues
-    console.log(`[SYNC-REQ] ID:${sync_id} Src:${src_host}:${src_port}(SSL:${isSrcSecure}) Dest:${dest_host}:${dest_port}(SSL:${isDestSecure}) DryRun:${isDryRun}`);
+    console.log(`[SYNC-REQ] ID:${sync_id} Src:${src_host} Dest:${dest_host} DryRun:${isDryRun}`);
 
     // SSE Setup
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for Nginx/Proxies
+    res.setHeader('X-Accel-Buffering', 'no');
 
     const controller = new AbortController();
     const signal = controller.signal;
     const clients = [];
     activeJobs.set(sync_id, { controller, clients });
 
-    const clientSrc = new ImapFlow({
-        host: src_host,
-        port: parseInt(src_port) || 993,
-        secure: isSrcSecure,
-        auth: { user: src_user, pass: src_pass },
-        logger: (log) => {
-            // Verbose logging
-            const time = new Date().toISOString().split('T')[1].slice(0, -1);
-            console.log(`[SRC-${log.level.toUpperCase()} ${time}] ${log.msg}`);
-            if (log.error) console.error(`[SRC-ERR]`, log.error);
-        },
+    // Client Config
+    const createClient = (host, port, user, pass, secure, desc) => new ImapFlow({
+        host,
+        port: parseInt(port) || 993,
+        secure,
+        auth: { user, pass },
+        logger: false, // Too verbose
         tls: { rejectUnauthorized: false },
-        emitLogs: true,
+        emitLogs: false,
         connectionTimeout: 15000,
         greetingTimeout: 15000,
         socketTimeout: 60000
     });
+
+    let clientSrc = createClient(src_host, src_port, src_user, src_pass, isSrcSecure, "Source");
     clients.push(clientSrc);
-    clientSrc.on('error', (err) => {
-        console.error(`[Source Error] ${src_host}:`, err.message);
-    });
 
     let clientDest = null;
     if (!isDryRun) {
-        clientDest = new ImapFlow({
-            host: dest_host,
-            port: parseInt(dest_port) || 993,
-            secure: isDestSecure,
-            auth: { user: dest_user, pass: dest_pass },
-            logger: (log) => {
-                const time = new Date().toISOString().split('T')[1].slice(0, -1);
-                console.log(`[DEST-LOG ${time}] ${log.msg}`);
-            },
-            tls: { rejectUnauthorized: false },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 30000
-        });
+        clientDest = createClient(dest_host, dest_port, dest_user, dest_pass, isDestSecure, "Dest");
         clients.push(clientDest);
-        clientDest.on('error', (err) => {
-            console.error("Dest Client Error:", err);
-        });
     }
 
-    // Helper: Timeout Wrapper with Abort Signal
-    const withTimeout = (promise, ms, name, signal) => {
+    // Helper: Timeout Wrapper
+    const withTimeout = (promise, ms, name) => {
         let timer;
         return new Promise((resolve, reject) => {
-            timer = setTimeout(() => {
-                reject(new Error(`${name} Connection timed out after ${ms}ms`));
-            }, ms);
+            timer = setTimeout(() => reject(new Error(`${name} Connection timed out`)), ms);
+            if (signal.aborted) { clearTimeout(timer); return reject(new Error("Stopped by user.")); }
 
-            // Listen for abort
-            if (signal) {
-                signal.addEventListener('abort', () => {
-                    clearTimeout(timer);
-                    reject(new Error("Stopped by user."));
-                }, { once: true });
-            }
-
-            promise
-                .then(res => {
-                    clearTimeout(timer);
-                    resolve(res);
-                })
-                .catch(err => {
-                    clearTimeout(timer);
-                    reject(err);
-                });
+            promise.then(res => { clearTimeout(timer); resolve(res); })
+                .catch(err => { clearTimeout(timer); reject(err); });
         });
     };
 
     try {
-        if (signal.aborted) throw new Error("Stopped by user before connection.");
-
-        sendLog(sync_id, res, "Connecting to source...", false, 0);
-        await withTimeout(clientSrc.connect(), 90000, "Source", signal);
-
         if (signal.aborted) throw new Error("Stopped by user.");
 
-        if (!isDryRun) {
-            sendLog(sync_id, res, "Connecting to destination...");
-            await withTimeout(clientDest.connect(), 90000, "Destination", signal);
+        // 1. Parallel Connection
+        sendLog(sync_id, res, "Connecting to servers...", false, 0);
+
+        const promises = [];
+        promises.push(withTimeout(clientSrc.connect(), 45000, "Source").then(() => {
+            sendLog(sync_id, res, "Connected to Source...");
+        }));
+
+        if (clientDest) {
+            promises.push(withTimeout(clientDest.connect(), 45000, "Destination").then(() => {
+                sendLog(sync_id, res, "Connected to Destination...");
+            }));
         }
 
+        await Promise.all(promises);
+
         if (signal.aborted) throw new Error("Stopped by user.");
 
-        // 1. List Folders
+        // 2. Prepare Folders
         const folders = await clientSrc.list();
         const excludeList = exclude_folders.split(',').map(f => f.trim()).filter(f => f);
 
@@ -303,163 +271,128 @@ app.post('/api/sync', async (req, res) => {
 
         if (targetFolders.length === 0) {
             sendLog(sync_id, res, "No folders found to sync.", false, 100);
-            return; // End
+            return;
         }
 
-        // --- SMART FOLDER MAPPING (HEURISTICS) ---
-        if (req.body.smart_map && !dry_run) {
-            sendLog(sync_id, res, "Running Smart Map auto-detection...");
-            const destFoldersList = await clientDest.list(); // List dest folders
-            const destNames = destFoldersList.map(f => f.path);
+        sendLog(sync_id, res, `Found ${targetFolders.length} folders: ${targetFolders.map(f => f.split('/').pop()).join(', ')}`);
 
-            const SPECIAL_FOLDERS = {
+
+
+        // --- SMART MAP PRE-CHECK (Only if dest connected) ---
+        let mapObj = req.body.folder_mapping || {};
+        if (req.body.smart_map && !isDryRun) {
+            sendLog(sync_id, res, "Auto-detecting Smart Map...");
+            const destList = await clientDest.list();
+            const destNames = destList.map(f => f.path);
+
+            const SPECIAL = {
                 'Sent': ['Sent', 'Sent Items', 'Sent Messages', '[Gmail]/Sent Mail', 'Sent Mail'],
-                'Trash': ['Trash', 'Deleted Items', 'Bin', 'Deleted Messages', '[Gmail]/Trash'],
-                'Drafts': ['Drafts', 'Drafts New', '[Gmail]/Drafts'],
-                'Spam': ['Junk', 'Spam', 'Junk E-mail', '[Gmail]/Spam', 'Bulk Mail']
+                'Trash': ['Trash', 'Deleted Items', 'Bin', '[Gmail]/Trash'],
+                'Drafts': ['Drafts', '[Gmail]/Drafts'],
+                'Spam': ['Junk', 'Spam', '[Gmail]/Spam', 'Bulk Mail']
             };
 
-            // Helper: Find first matching folder in a list
-            const findMatch = (folders, patterns) => {
+            const findMatch = (list, patterns) => {
                 for (const p of patterns) {
-                    const match = folders.find(f => f.toLowerCase() === p.toLowerCase() || f.endsWith('/' + p));
-                    if (match) return match;
+                    const m = list.find(f => f.toLowerCase() === p.toLowerCase() || f.endsWith('/' + p));
+                    if (m) return m;
                 }
                 return null;
             };
 
-            // Helper: Normalize mapping key (strip ending separator if any)
-            const mapObj = req.body.folder_mapping || {};
-
-            for (const [type, patterns] of Object.entries(SPECIAL_FOLDERS)) {
-                const srcMatch = findMatch(targetFolders, patterns);
-                const destMatch = findMatch(destNames, patterns);
-
-                if (srcMatch && destMatch && srcMatch !== destMatch) {
-                    // Only map if not already manually mapped
-                    if (!mapObj[srcMatch]) {
-                        mapObj[srcMatch] = destMatch;
-                        sendLog(sync_id, res, `[Smart Map] Auto-mapped "${srcMatch}" -> "${destMatch}" (${type})`);
-                    }
+            for (const [type, pats] of Object.entries(SPECIAL)) {
+                const srcMatch = findMatch(targetFolders, pats);
+                const destMatch = findMatch(destNames, pats);
+                if (srcMatch && destMatch && srcMatch !== destMatch && !mapObj[srcMatch]) {
+                    mapObj[srcMatch] = destMatch;
+                    sendLog(sync_id, res, `[Smart Map] "${srcMatch}" -> "${destMatch}"`);
                 }
             }
-            req.body.folder_mapping = mapObj; // Update mapping for main loop
         }
 
-        let totalEmails = 0;
-        const jobQueue = [];
+        // 3. Merged Scan & Sync Loop
+        sendLog(sync_id, res, `Starting Sync for ${targetFolders.length} folders...`);
+        let totalProcessed = 0;
 
-        // 2. Scan Folders & Build Queues
-        sendLog(sync_id, res, `Scanning ${targetFolders.length} folders...`);
+        // Concurrency Limiter
+        const limit = pLimit(parseInt(concurrency) || 1);
 
         for (const folder of targetFolders) {
             if (signal.aborted) break;
 
+            const destFolder = mapObj[folder] || folder; // Map or keep original
+
+            // --- A. Scan Source ---
+            let uids = [];
+            let srcLock;
             try {
-                sendLog(sync_id, res, `Scanning folder: ${folder}...`);
-                const lock = await clientSrc.getMailboxLock(folder);
-                try {
-                    const searchCriteria = since_date ? { since: new Date(since_date) } : { all: true };
-                    const status = await clientSrc.status(folder, { messages: true });
+                sendLog(sync_id, res, `Scanning ${folder}...`);
+                srcLock = await clientSrc.getMailboxLock(folder);
 
-                    for await (const msg of clientSrc.fetch(searchCriteria, { uid: true })) {
-                        jobQueue.push({ folder, uid: msg.uid });
-                    }
-
-                    sendLog(sync_id, res, `Folder ${folder}: Found items matching criteria.`);
-                } catch (err) {
-                    sendLog(sync_id, res, `Skip folder ${folder}: ${err.message}`, true);
-                } finally {
-                    lock.release();
+                const criteria = since_date ? { since: new Date(since_date) } : { all: true };
+                // Fetch ALL UIDs first (fast)
+                for await (const msg of clientSrc.fetch(criteria, { uid: true })) {
+                    uids.push(msg.uid);
                 }
-            } catch (err) {
-                sendLog(sync_id, res, `Error accessing ${folder}: ${err.message}`, true);
-            }
-        }
-
-        totalEmails = jobQueue.length;
-        if (totalEmails === 0) {
-            sendLog(sync_id, res, "No emails found matching criteria.", false, 100);
-        } else {
-            sendLog(sync_id, res, `Total ${totalEmails} emails to sync. Starting...`);
-
-            // 3. Process Queue
-            const tasksByFolder = {};
-            for (const t of jobQueue) {
-                if (!tasksByFolder[t.folder]) tasksByFolder[t.folder] = [];
-                tasksByFolder[t.folder].push(t.uid);
+            } catch (scanErr) {
+                sendLog(sync_id, res, `Skip ${folder} (Access Denied)`, true);
+                if (srcLock) srcLock.release();
+                continue; // Skip this folder
             }
 
-            const limit = pLimit(parseInt(concurrency) || 1);
-            let processedCount = 0;
+            if (uids.length === 0) {
+                sendLog(sync_id, res, `Folder ${folder}: Empty (0 items).`);
+                srcLock.release();
+                continue;
+            }
 
-            for (const folder of Object.keys(tasksByFolder)) {
-                if (signal.aborted) break;
+            sendLog(sync_id, res, `Processing ${folder}: ${uids.length} emails found.`);
 
-                const uids = tasksByFolder[folder];
-
-                // --- FOLDER MAPPING LOGIC ---
-                // If mapping exists for this folder, use it. Otherwise use original name.
-                const destFolder = (req.body.folder_mapping && req.body.folder_mapping[folder])
-                    ? req.body.folder_mapping[folder]
-                    : folder;
-
-                if (folder !== destFolder) {
-                    sendLog(sync_id, res, `>>> Mapping folder: "${folder}" -> "${destFolder}"`);
-                }
-
-                // Lock Source Folder
-                let srcLock;
+            // --- B. Prepare Dest (If needed) ---
+            if (!isDryRun) {
                 try {
-                    srcLock = await clientSrc.getMailboxLock(folder);
-
-                    // Ensure Dest Folder Exists (if not dry run)
-                    if (!dry_run) {
-                        try {
-                            await clientDest.mailboxOpen(destFolder); // Checks existence/selects
-                        } catch (e) {
-                            try {
-                                await clientDest.mailboxCreate(destFolder);
-                                await clientDest.mailboxOpen(destFolder);
-                            } catch (e2) {
-                                // Fallback to INBOX if cant create
-                                await clientDest.mailboxOpen('INBOX');
-                            }
-                        }
+                    await clientDest.mailboxOpen(destFolder);
+                } catch (e) {
+                    try {
+                        await clientDest.mailboxCreate(destFolder);
+                        await clientDest.mailboxOpen(destFolder);
+                    } catch (e2) {
+                        try { await clientDest.mailboxOpen('INBOX'); } catch (e3) { } // Safety net
                     }
-
-                    // Process UIDs in this folder
-                    const promises = uids.map(uid => limit(async () => {
-                        if (signal.aborted) return;
-
-                        try {
-                            // Fetch Message Source
-                            const msg = await clientSrc.fetchOne(uid, { source: true });
-                            const raw = msg.source;
-
-                            if (!dry_run) {
-                                await clientDest.append(destFolder, raw);
-                                // Update Stats
-                                serverStats.totalEmails++;
-                                serverStats.totalBytes += raw.length;
-                            }
-
-                            processedCount++;
-                            const progress = Math.round((processedCount / totalEmails) * 100);
-                            sendLog(sync_id, res, `Synced ${folder}:${uid} -> ${destFolder}`, false, progress);
-
-                        } catch (err) {
-                            sendLog(sync_id, res, `Err ${folder}:${uid} - ${err.message}`, true);
-                        }
-                    }));
-
-                    await Promise.all(promises);
-
-                } catch (err) {
-                    sendLog(sync_id, res, `Error processing folder ${folder}: ${err.message}`, true);
-                } finally {
-                    if (srcLock) srcLock.release();
                 }
+            }
+
+            // --- C. Sync Loop (Batched by Concurrency) ---
+            // We keep srcLock open to read bodies safely
+            try {
+                const folderPromises = uids.map(uid => limit(async () => {
+                    if (signal.aborted) return;
+                    try {
+                        // 1. Fetch Body
+                        const msg = await clientSrc.fetchOne(uid, { source: true });
+                        if (!msg || !msg.source) return;
+
+                        // 2. Append to Dest
+                        if (!isDryRun) {
+                            await clientDest.append(destFolder, msg.source);
+                            serverStats.totalEmails++;
+                            serverStats.totalBytes += msg.source.length;
+                        }
+
+                        // 3. Log
+                        totalProcessed++;
+                        // Use a rolling counter for progress since we don't have grand total
+                        sendLog(sync_id, res, `Synced ${folder}:${uid} -> ${destFolder}`, false);
+
+                    } catch (itemErr) {
+                        sendLog(sync_id, res, `Err ${folder}:${uid} - ${itemErr.message}`, true);
+                    }
+                }));
+
+                await Promise.all(folderPromises);
+
+            } finally {
+                srcLock.release(); // Important: Release lock after processing folder
             }
         }
 
@@ -468,19 +401,14 @@ app.post('/api/sync', async (req, res) => {
         }
 
     } catch (err) {
-        if (signal.aborted || err.message === 'Stopped by user.') {
+        if (signal.aborted || err.message.includes('Stopped')) {
             sendLog(sync_id, res, "Stopped by user.", true);
         } else {
             sendLog(sync_id, res, `Critical Error: ${err.message}`, true);
         }
     } finally {
-        // Cleanup
-        if (clientSrc) {
-            try { await clientSrc.logout(); } catch (e) { }
-        }
-        if (clientDest) {
-            try { await clientDest.logout(); } catch (e) { }
-        }
+        if (clientSrc) try { await clientSrc.logout(); } catch (e) { }
+        if (clientDest) try { await clientDest.logout(); } catch (e) { }
         activeJobs.delete(sync_id);
         res.end();
     }
