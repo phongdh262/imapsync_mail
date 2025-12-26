@@ -22,12 +22,25 @@ Coolify là công cụ quản lý VPS tuyệt vời giúp bạn deploy ứng d�
 
 ## 2. Tạo Project trên Coolify
 
-1.  Truy cập vào trang quản trị Coolify của bạn (ví dụ: `http://vps-ip:3000` hoặc domain bạn đã cài).
-2.  Nếu chưa có **Project**, hãy tạo một Project mới.
-3.  Trong Project, nhấn **New** -> **Public Repository** (hoặc Private nếu repo của bạn ẩn).
-4.  Dán link Git Repository của bạn vào.
-    *   Ví dụ: `https://github.com/yourname/tools_mail`
-5.  Nhấn **Check Repository**.
+Bạn có 2 cách để kết nối, tùy thuộc vào Repository của bạn là **Public** (Công khai) hay **Private** (Riêng tư).
+
+### Cách 1: Dùng "Public Repository" (Khuyên dùng nếu Repo Public)
+Đây là cách đơn giản nhất, **không cần cấu hình GitHub App**.
+
+1.  Truy cập Dashboard Coolify.
+2.  Tạo **Project** mới (hoặc vào project có sẵn).
+3.  Chọn môi trường (Environment), ví dụ **Production**.
+4.  Nhấn nút **+ New** -> Chọn **Public Repository**.
+5.  Dán link Git của bạn vào: `https://github.com/phongdh262/imapsync_mail`
+6.  Nhấn **Check Repository** và tiếp tục sang bước 3.
+
+### Cách 2: Dùng "Private Repository" (Nếu Repo Private)
+Nếu repo là riêng tư, bạn cần cấp quyền truy cập cho Coolify.
+
+*   **Cách đơn giản**: Chọn **Private Repository (with Deploy Key)**. Coolify sẽ cấp cho bạn một `Deploy Key`. Bạn copy key này, vào GitHub Repo -> Settings -> Deploy Keys -> Add Deploy Key.
+*   **Cách nâng cao (GitHub App)**: Nếu bạn đang ở màn hình cấu hình "GitHub Source" (như ảnh bạn gửi):
+    *   **Organization**: Điền tên user GitHub của bạn (ví dụ: `phongdh262`). **Không điền URL đầy đủ**.
+    *   **App ID, Client ID, Client Secret**: Bạn cần vào GitHub -> Settings -> Developer Settings -> GitHub Apps -> New GitHub App để tạo và lấy các thông tin này. (Cách này rất phức tạp, chỉ nên dùng nếu bạn quản lý nhiều repo).
 
 ## 3. Cấu hình Dịch vụ (Service)
 

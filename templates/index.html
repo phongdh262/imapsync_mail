@@ -6,10 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IMAP Sync Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FONTS: Inter for UI, JetBrains Mono for Code/Logs -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .glass {
@@ -27,12 +36,16 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: #64748b;
             border-radius: 4px;
         }
 
         .fade-in {
             animation: fadeIn 0.3s ease-out;
+        }
+
+        .fade-in-fast {
+            animation: fadeIn 0.15s ease-out;
         }
 
         @keyframes fadeIn {
@@ -49,305 +62,417 @@
     </style>
 </head>
 
-<body
-    class="bg-gradient-to-br from-slate-50 to-blue-50/50 min-h-screen text-slate-800 antialiased selection:bg-blue-100 selection:text-blue-900">
+<body class="bg-slate-900 min-h-screen text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
 
-    <div class="max-w-7xl mx-auto p-4 md:p-8">
+    <div class="max-w-[1800px] mx-auto p-4 md:p-6 lg:p-8">
 
         <!-- Header -->
-        <header class="mb-10 text-center relative z-10">
-            <h1
-                class="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-900 tracking-tight mb-3">
-                IMAP Sync Pro
-            </h1>
-            <p class="text-slate-500 text-lg">Batch Migration Tool with Advanced Filters</p>
-        </header>
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-blue-500/20 rounded-2xl border border-blue-400/30 shadow-lg shadow-blue-500/10">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white tracking-tight">IMAP Sync Pro</h1>
+                    <p class="text-slate-400 text-sm">Batch Migration Tool with Advanced Filters</p>
+                </div>
+            </div>
 
-        <!-- Navigation Tabs -->
-        <div class="flex justify-center mb-10 relative z-10">
-            <div class="bg-white/80 p-1.5 rounded-2xl shadow-sm border border-slate-200 inline-flex backdrop-blur-sm">
+            <!-- Navigation Tabs -->
+            <div class="bg-slate-800 p-1.5 rounded-xl border border-slate-600 inline-flex shadow-lg">
                 <button onclick="switchTab('single')" id="tab-single"
-                    class="px-8 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm bg-slate-900 text-white">
+                    class="px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 shadow-md bg-blue-600 text-white shadow-blue-900/20">
                     Single Sync
                 </button>
                 <button onclick="switchTab('bulk')" id="tab-bulk"
-                    class="px-8 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-900 transition-all duration-300">
+                    class="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-300">
                     Bulk Sync (CSV)
                 </button>
             </div>
-        </div>
+        </header>
 
-        <!-- Single Sync Panel -->
-        <div id="panel-single" class="tab-panel fade-in">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <!-- Source Card -->
-                <div
-                    class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 group hover:shadow-lg transition-all">
-                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                        <span
-                            class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">1</span>
-                        Source Account
-                    </h2>
-                    <div class="space-y-4">
-                        <input type="text" id="src_host"
-                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none"
-                            placeholder="Host (e.g. imap.gmail.com)">
-                        <div class="grid grid-cols-3 gap-4">
-                            <input type="text" id="src_user"
-                                class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none"
-                                placeholder="Email / User">
-                            <input type="number" id="src_port" value="993"
-                                class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none text-center">
-                        </div>
-                        <input type="password" id="src_pass"
-                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 transition-all outline-none"
-                            placeholder="Password">
-                    </div>
-                </div>
+        <!-- MAIN LAYOUT: EVEN SPLIT SCREEN (50/50) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start h-full">
 
-                <!-- Destination Card -->
-                <div
-                    class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 group hover:shadow-lg transition-all">
-                    <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-3">
-                        <span
-                            class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm">2</span>
-                        Destination Account
-                    </h2>
-                    <div class="space-y-4">
-                        <input type="text" id="dest_host"
-                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none"
-                            placeholder="Host (e.g. imap.office.com)">
-                        <div class="grid grid-cols-3 gap-4">
-                            <input type="text" id="dest_user"
-                                class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none"
-                                placeholder="Email / User">
-                            <input type="number" id="dest_port" value="993"
-                                class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none text-center">
-                        </div>
-                        <input type="password" id="dest_pass"
-                            class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 transition-all outline-none"
-                            placeholder="Password">
-                    </div>
-                </div>
-            </div>
+            <!-- LEFT COLUMN: INPUTS -->
+            <div class="space-y-6">
 
-            <!-- Single Sync Advanced Options -->
-            <div class="w-full max-w-lg mx-auto mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                <button class="flex items-center justify-between w-full text-sm font-bold text-slate-600 mb-2"
-                    onclick="document.getElementById('advConfig').classList.toggle('hidden')">
-                    <span>Advanced Options 🛠️</span>
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div id="advConfig" class="hidden space-y-4 pt-4 border-t border-slate-200 mt-2 fade-in">
-                    <div class="flex items-center gap-2 mb-4">
-                        <input type="checkbox" id="dryRun" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                        <label for="dryRun" class="text-sm font-medium text-slate-700 select-none">Dry Run Mode
-                            (Simulate only, no data copied)</label>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">SYNC FROM DATE</label>
-                            <input type="date" id="sinceDate"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">EXCLUDE FOLDERS</label>
-                            <input type="text" id="excludeFolders"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-blue-500 outline-none"
-                                placeholder="Trash, Spam, Junk">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Single Sync Controls -->
-            <div class="flex flex-col items-center gap-8">
-                <div class="w-full max-w-sm">
-                    <div class="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-                        <span>Concurrency</span>
-                        <span class="text-blue-600" id="concurrencyVal">1 Thread</span>
-                    </div>
-                    <input type="range" id="concurrency" min="1" max="10" value="1"
-                        class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
-                </div>
-
-                <div class="flex gap-4">
-                    <button id="startSync"
-                        class="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2">
-                        Start Migration
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                    </button>
-
-                    <button id="stopSync"
-                        class="hidden px-10 py-4 bg-white text-red-500 font-bold rounded-2xl border-2 border-red-50 hover:bg-red-50 transition-all">
-                        Stop Process
-                    </button>
-                </div>
-            </div>
-
-            <!-- Single Sync Logs -->
-            <div id="logContainer" class="hidden mt-10 max-w-4xl mx-auto">
-                <div class="bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
-                    <div class="px-5 py-3 bg-slate-800/50 border-b border-slate-700 flex justify-between items-center">
-                        <span class="text-xs font-mono text-slate-400">Terminal Output</span>
-                    </div>
-                    <div id="logs"
-                        class="p-6 h-80 overflow-y-auto font-mono text-xs md:text-sm text-slate-300 leading-relaxed scroll-smooth">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bulk Sync Panel -->
-        <div id="panel-bulk" class="tab-panel hidden fade-in space-y-6">
-
-            <!-- Default Settings -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                <h3 class="text-lg font-bold text-slate-800 mb-4">Default Configuration</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                        <h4 class="text-xs font-bold text-blue-800 mb-3 uppercase">Default Source</h4>
-                        <div class="grid grid-cols-3 gap-3">
-                            <input type="text" id="def_src_host"
-                                class="col-span-2 w-full px-3 py-2 rounded border border-blue-200 text-sm"
-                                placeholder="Host">
-                            <input type="number" id="def_src_port" value="993"
-                                class="w-full px-3 py-2 rounded border border-blue-200 text-sm text-center">
-                        </div>
-                    </div>
-                    <div class="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                        <h4 class="text-xs font-bold text-indigo-800 mb-3 uppercase">Default Destination</h4>
-                        <div class="grid grid-cols-3 gap-3">
-                            <input type="text" id="def_dest_host"
-                                class="col-span-2 w-full px-3 py-2 rounded border border-indigo-200 text-sm"
-                                placeholder="Host">
-                            <input type="number" id="def_dest_port" value="993"
-                                class="w-full px-3 py-2 rounded border border-indigo-200 text-sm text-center">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bulk Advanced Options -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                <button class="flex items-center justify-between w-full text-sm font-bold text-slate-600"
-                    onclick="document.getElementById('bulkAdvConfig').classList.toggle('hidden')">
-                    <span>🔧 Advanced Bulk Settings (Date Filter, Exclusions)</span>
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </button>
-                <div id="bulkAdvConfig" class="hidden space-y-4 pt-4 border-t border-slate-100 mt-4 fade-in">
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="bulkDryRun"
-                            class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                        <label for="bulkDryRun" class="text-sm font-medium text-slate-700 select-none">Dry Run (Simulate
-                            only)</label>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">SYNC FROM DATE</label>
-                            <input type="date" id="bulkSinceDate"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1">EXCLUDE FOLDERS</label>
-                            <input type="text" id="bulkExcludeFolders"
-                                class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500"
-                                placeholder="Trash, Spam">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CSV Input Area -->
-            <div class="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-                <div class="flex justify-between items-end mb-4">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-800">Batch Import</h2>
-                        <p class="text-sm text-slate-500 mt-1">Upload .CSV or paste data.</p>
-                    </div>
-                    <label class="cursor-pointer group">
-                        <input type="file" id="csvFile" accept=".csv" class="hidden">
+                <!-- SINGLE SYNC INPUTS -->
+                <div id="input-single" class="fade-in space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Source Card (Lighter Slate-800) -->
                         <div
-                            class="px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors">
-                            Upload .CSV
+                            class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-600 transition-all hover:border-blue-400/50 group">
+                            <h2
+                                class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-3 uppercase tracking-wider">
+                                <span
+                                    class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center text-xs border border-blue-400/30">1</span>
+                                Source
+                            </h2>
+                            <div class="space-y-3">
+                                <input type="text" id="src_host"
+                                    class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none text-sm transition-all text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Host (e.g. imap.gmail.com)">
+                                <div class="grid grid-cols-3 gap-3">
+                                    <input type="text" id="src_user"
+                                        class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
+                                        placeholder="Email / User">
+                                    <input type="number" id="src_port" value="993"
+                                        class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-center font-mono text-white shadow-inner">
+                                </div>
+                                <input type="password" id="src_pass"
+                                    class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Password">
+                            </div>
                         </div>
-                    </label>
-                </div>
-                <input type="text" class="w-full mb-2 hidden" id="dummyFocus"> <!-- Hack to prev focus jump -->
-                <textarea id="bulkInput" rows="5"
-                    class="w-full p-5 rounded-2xl bg-slate-900 text-slate-300 font-mono text-xs border-2 border-transparent focus:border-blue-500 focus:ring-0 outline-none transition-all resize-y"
-                    placeholder="user1,pass1,user1_new,pass2"></textarea>
 
-                <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                        <span class="text-xs font-bold text-slate-400 uppercase">Concurrency</span>
-                        <input type="number" id="batchConcurrency" value="3" min="1" max="5"
-                            class="w-12 bg-transparent font-bold text-center text-slate-700 outline-none">
+                        <!-- Destination Card (Lighter Slate-800) -->
+                        <div
+                            class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-600 transition-all hover:border-indigo-400/50 group">
+                            <h2
+                                class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-3 uppercase tracking-wider">
+                                <span
+                                    class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs border border-indigo-400/30">2</span>
+                                Destination
+                            </h2>
+                            <div class="space-y-3">
+                                <input type="text" id="dest_host"
+                                    class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none text-sm transition-all text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Host (e.g. imap.office.com)">
+                                <div class="grid grid-cols-3 gap-3">
+                                    <input type="text" id="dest_user"
+                                        class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
+                                        placeholder="Email / User">
+                                    <input type="number" id="dest_port" value="993"
+                                        class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-center font-mono text-white shadow-inner">
+                                </div>
+                                <input type="password" id="dest_pass"
+                                    class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Password">
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="downloadReport()"
-                            class="px-6 py-3 bg-green-50 text-green-700 font-bold rounded-xl hover:bg-green-100 border border-green-200 transition-all text-sm flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Report
+
+                    <!-- Advanced Options -->
+                    <div class="bg-slate-800 p-5 rounded-2xl border border-slate-600 shadow-sm">
+                        <button
+                            class="flex items-center justify-between w-full text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider mb-2"
+                            onclick="document.getElementById('advConfig').classList.toggle('hidden')">
+                            <span>Configuration & Filters</span>
+                            <div class="bg-slate-700 p-1 rounded-md border border-slate-600">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                         </button>
-                        <button onclick="parseAndLoad()"
-                            class="px-6 py-3 bg-white border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 text-sm">
-                            Load Preview
-                        </button>
-                        <button onclick="stopBatch()" id="btnStopBatch"
-                            class="hidden px-8 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 border border-red-200 transition-all text-sm">
-                            Stop All
-                        </button>
-                        <button onclick="startBatch()" id="btnStartBatch"
-                            class="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                            disabled>
-                            Start Batch
-                        </button>
+                        <div id="advConfig" class="hidden space-y-4 pt-4 border-t border-slate-600 mt-2 fade-in">
+                            <div class="flex items-center gap-3">
+                                <div class="relative flex items-center">
+                                    <input type="checkbox" id="dryRun"
+                                        class="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-500 bg-slate-700 checked:border-blue-500 checked:bg-blue-600 transition-all">
+                                    <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100"
+                                        viewBox="0 0 14 14" fill="none">
+                                        <path d="M3 8L6 11L11 3.5" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+                                <label for="dryRun" class="text-sm font-medium text-slate-300 pointer-events-none">Dry
+                                    Run Mode <span class="text-slate-500 ml-1 text-xs">(Simulate only)</span></label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-2 uppercase">Sync
+                                        From</label>
+                                    <input type="date" id="sinceDate"
+                                        class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-sm outline-none focus:border-blue-400 text-white shadow-inner">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-2 uppercase">Exclude
+                                        Folders</label>
+                                    <input type="text" id="excludeFolders"
+                                        class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-sm outline-none focus:border-blue-400 text-white placeholder-slate-400 shadow-inner"
+                                        placeholder="Trash, Spam">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div
+                        class="bg-slate-800 p-6 rounded-3xl shadow-xl border border-slate-600 flex flex-col items-center gap-6">
+                        <div class="w-full">
+                            <div
+                                class="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                <span>Concurrency Level</span>
+                                <span class="text-blue-400 font-mono" id="concurrencyVal">1 Thread</span>
+                            </div>
+                            <input type="range" id="concurrency" min="1" max="10" value="1"
+                                class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400">
+                        </div>
+                        <div class="flex gap-4 w-full">
+                            <button id="startSync"
+                                class="flex-1 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg shadow-blue-900/40 hover:-translate-y-0.5 transition-all text-sm flex items-center justify-center gap-2 group">
+                                Start Migration
+                                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </button>
+                            <button id="stopSync"
+                                class="hidden flex-1 py-4 bg-slate-700 text-red-500 font-bold rounded-2xl border border-red-900/30 hover:bg-red-900/20 transition-all text-sm">
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BULK SYNC INPUTS -->
+                <div id="input-bulk" class="hidden fade-in space-y-6">
+                    <!-- Default Settings -->
+                    <div class="bg-slate-800 p-6 rounded-3xl border border-slate-600 shadow-lg">
+                        <h3 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-wider">Default Configuration
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-slate-700/50 rounded-2xl border border-slate-600">
+                                <h4 class="text-[10px] font-bold text-blue-400 mb-2 uppercase">Source Default</h4>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <input type="text" id="def_src_host"
+                                        class="col-span-2 w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs focus:border-blue-400 outline-none text-white placeholder-slate-400 shadow-inner"
+                                        placeholder="Host">
+                                    <input type="number" id="def_src_port" value="993"
+                                        class="w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs text-center font-mono text-white shadow-inner">
+                                </div>
+                            </div>
+                            <div class="p-4 bg-slate-700/50 rounded-2xl border border-slate-600">
+                                <h4 class="text-[10px] font-bold text-indigo-400 mb-2 uppercase">Dest Default</h4>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <input type="text" id="def_dest_host"
+                                        class="col-span-2 w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs focus:border-indigo-400 outline-none text-white placeholder-slate-400 shadow-inner"
+                                        placeholder="Host">
+                                    <input type="number" id="def_dest_port" value="993"
+                                        class="w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs text-center font-mono text-white shadow-inner">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bulk CSV Input -->
+                    <div class="bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-600 flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="text-sm font-bold text-slate-300">CSV Data</div>
+                            <label
+                                class="cursor-pointer text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/20 transition-colors">
+                                <input type="file" id="csvFile" accept=".csv" class="hidden"> Upload File
+                            </label>
+                        </div>
+                        <textarea id="bulkInput" rows="12"
+                            class="w-full p-4 rounded-xl bg-slate-700 text-slate-300 font-mono text-xs border border-slate-600 leading-relaxed focus:border-blue-400 outline-none resize-none shadow-inner"
+                            placeholder="user1,pass1,user1_new,pass2"></textarea>
+
+                        <!-- Bulk Advanced -->
+                        <div class="mt-4 pt-4 border-t border-slate-600">
+                            <button
+                                class="flex items-center justify-between w-full text-xs font-bold text-slate-400 hover:text-white transition-colors mb-2"
+                                onclick="document.getElementById('bulkAdvConfig').classList.toggle('hidden')">
+                                <span>Bulk Options (Date, Exclude) 🔧</span>
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div id="bulkAdvConfig" class="hidden grid grid-cols-2 gap-3 mt-3">
+                                <div class="col-span-2 flex items-center gap-2 mb-1">
+                                    <input type="checkbox" id="bulkDryRun"
+                                        class="h-4 w-4 rounded border-slate-500 bg-slate-700 text-blue-600">
+                                    <label for="bulkDryRun" class="text-xs font-bold text-slate-400">Dry Run</label>
+                                </div>
+                                <input type="date" id="bulkSinceDate"
+                                    class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-xs text-slate-400 outline-none shadow-inner">
+                                <input type="text" id="bulkExcludeFolders"
+                                    class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-xs outline-none text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Exclude Folders">
+                            </div>
+                        </div>
+
+                        <!-- Bulk Controls -->
+                        <div class="mt-6 flex flex-col gap-3">
+                            <div
+                                class="flex items-center justify-between bg-slate-900 px-4 py-3 rounded-xl border border-slate-700">
+                                <span class="text-xs font-bold text-slate-500 uppercase">Batch Concurrency</span>
+                                <input type="number" id="batchConcurrency" value="3" min="1" max="5"
+                                    class="w-12 bg-slate-800 border border-slate-600 rounded text-center text-sm font-bold outline-none text-white focus:border-blue-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="parseAndLoad()"
+                                    class="py-3 bg-slate-700 border border-slate-600 text-slate-300 font-bold rounded-xl hover:bg-slate-600 hover:text-white transition-all text-xs uppercase tracking-wider">Preview
+                                    Jobs</button>
+                                <button onclick="startBatch()" id="btnStartBatch"
+                                    class="py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-500 transition-all text-xs uppercase tracking-wider disabled:opacity-50"
+                                    disabled>Start Batch</button>
+                                <button onclick="stopBatch()" id="btnStopBatch"
+                                    class="hidden col-span-2 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl border border-red-500/20 hover:bg-red-500/20">Stop
+                                    All</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Jobs Table -->
-            <div id="jobsContainer" class="hidden">
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr
-                                class="bg-slate-50/50 border-b border-slate-100 text-xs text-slate-400 uppercase font-semibold">
-                                <th class="px-6 py-4">Source</th>
-                                <th class="px-6 py-4">Destination</th>
-                                <th class="px-6 py-4">Status</th>
-                                <th class="px-6 py-4 w-1/3">Progress</th>
-                            </tr>
-                        </thead>
-                        <tbody id="jobsTableBody" class="divide-y divide-slate-50 text-sm"></tbody>
-                    </table>
+            <!-- RIGHT COLUMN: OUTPUTS -->
+            <div class="space-y-6 h-full min-h-[600px] lg:min-h-0 lg:h-[calc(100vh-8rem)] sticky top-6">
+
+                <!-- SINGLE OUTPUT -->
+                <div id="output-single" class="fade-in h-full flex flex-col">
+                    <div
+                        class="bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border border-slate-600 flex flex-col h-full ring-1 ring-white/5">
+                        <div
+                            class="px-5 py-4 bg-slate-900/50 border-b border-slate-600 flex justify-between items-center shrink-0">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Terminal
+                                    Output</span>
+                            </div>
+                            <div class="flex gap-1.5">
+                                <div class="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/30"></div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/30">
+                                </div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-green-500/20 border border-green-500/30"></div>
+                            </div>
+                        </div>
+                        <div id="logs"
+                            class="p-6 overflow-y-auto font-mono text-xs md:text-sm text-slate-300 leading-relaxed scroll-smooth flex-1 bg-slate-900/80 shadow-inner">
+                            <div class="text-slate-500 italic select-none">Waiting for process start...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BULK OUTPUT -->
+                <div id="output-bulk" class="hidden fade-in h-full">
+                    <div
+                        class="bg-slate-800 rounded-3xl shadow-xl border border-slate-600 overflow-hidden flex flex-col h-full ring-1 ring-white/5">
+                        <div
+                            class="px-6 py-4 border-b border-slate-600 bg-slate-900/30 flex justify-between items-center shrink-0">
+                            <h3 class="font-bold text-slate-300 text-sm">Active Job Queue</h3>
+                            <button onclick="downloadReport()"
+                                class="text-xs font-bold text-emerald-500 hover:text-emerald-400 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Export Report
+                            </button>
+                        </div>
+                        <div id="jobsContainer" class="hidden flex-1 flex flex-col overflow-hidden">
+                            <div class="overflow-y-auto flex-1">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr
+                                            class="bg-slate-900/50 border-b border-slate-600 text-[10px] text-slate-500 uppercase font-bold tracking-wider sticky top-0 backdrop-blur-md">
+                                            <th class="px-6 py-3">Migration Context</th>
+                                            <th class="px-6 py-3">Status</th>
+                                            <th class="px-6 py-3 w-1/4">Progress</th>
+                                            <th class="px-6 py-3 text-right">Controls</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="jobsTableBody" class="divide-y divide-slate-600 text-sm"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="jobsPlaceholder"
+                            class="flex-1 flex flex-col items-center justify-center p-10 text-slate-500">
+                            <div class="bg-slate-900/50 p-6 rounded-full mb-4">
+                                <svg class="w-12 h-12 text-slate-600" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                            <p class="text-sm font-medium">No jobs queued. Load a CSV to begin.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LOG MODAL -->
+    <div id="logModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+            <div
+                class="bg-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden border border-slate-600 fade-in">
+                <div class="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-900/50">
+                    <h3 class="font-bold text-slate-200" id="modalTitle">Logs</h3>
+                    <button onclick="closeModal()" class="text-slate-500 hover:text-white transition-colors">✕</button>
+                </div>
+                <div id="modalLogContent"
+                    class="flex-1 overflow-y-auto bg-slate-900 p-6 font-mono text-xs text-slate-300"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIRM CUSTOM MODAL -->
+    <div id="confirmModal" class="fixed inset-0 z-[60] hidden">
+        <div class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm transition-opacity" onclick="closeConfirm(false)">
+        </div>
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div
+                class="bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-600 fade-in-fast flex flex-col overflow-hidden ring-1 ring-white/10">
+                <div class="p-6 text-center">
+                    <div
+                        class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                        <svg class="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2" id="confirmTitle">Confirm Action</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed" id="confirmMsg">Are you sure you want to proceed?
+                    </p>
+                </div>
+                <div class="flex border-t border-slate-700">
+                    <button onclick="closeConfirm(false)"
+                        class="flex-1 py-4 text-sm font-bold text-slate-400 hover:bg-slate-700/50 hover:text-white transition-colors">Cancel</button>
+                    <div class="w-px bg-slate-700"></div>
+                    <button onclick="closeConfirm(true)"
+                        class="flex-1 py-4 text-sm font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors">Confirm</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- LOG MODAL -->
-    <div id="logModal" class="fixed inset-0 z-50 hidden">
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
-        <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
-                <div class="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800" id="modalTitle">Logs</h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+    <!-- INFO CUSTOM MODAL (NEW) -->
+    <div id="infoModal" class="fixed inset-0 z-[60] hidden">
+        <div class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm transition-opacity" onclick="closeInfo()"></div>
+        <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div
+                class="bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-600 fade-in-fast flex flex-col overflow-hidden ring-1 ring-white/10">
+                <div class="p-6 text-center">
+                    <div
+                        class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
+                        <svg class="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2" id="infoTitle">Notification</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed" id="infoMsg">Message</p>
                 </div>
-                <div id="modalLogContent"
-                    class="flex-1 overflow-y-auto bg-slate-900 p-6 font-mono text-xs text-slate-300"></div>
+                <div class="flex border-t border-slate-700">
+                    <button onclick="closeInfo()"
+                        class="flex-1 py-4 text-sm font-bold text-blue-400 hover:bg-slate-700/50 transition-colors">OK</button>
+                </div>
             </div>
         </div>
     </div>
@@ -375,16 +500,27 @@
         });
 
         function switchTab(tab) {
-            document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            // Hide all first
+            ['input-single', 'input-bulk', 'output-single', 'output-bulk'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
             const sBtn = document.getElementById('tab-single');
             const bBtn = document.getElementById('tab-bulk');
+
+            const activeClass = "px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 shadow-md bg-blue-600 text-white shadow-blue-900/20";
+            const inactiveClass = "px-6 py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-300";
+
             if (tab === 'single') {
-                sBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm bg-slate-900 text-white";
-                bBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-900";
+                document.getElementById('input-single').classList.remove('hidden');
+                document.getElementById('output-single').classList.remove('hidden');
+                sBtn.className = activeClass;
+                bBtn.className = inactiveClass;
             } else {
-                bBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm bg-slate-900 text-white";
-                sBtn.className = "px-8 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:text-slate-900";
+                document.getElementById('input-bulk').classList.remove('hidden');
+                document.getElementById('output-bulk').classList.remove('hidden');
+                bBtn.className = activeClass;
+                sBtn.className = inactiveClass;
             }
         }
 
@@ -400,8 +536,11 @@
         });
 
         function appendLog(msg, isError = false) {
+            // If logsDiv has placeholder, remove it
+            if (logsDiv.querySelector('.italic')) logsDiv.innerHTML = '';
+
             const div = document.createElement('div');
-            div.className = isError ? 'text-red-400 mb-1 border-l-2 border-red-500 pl-2' : 'mb-1 border-l-2 border-slate-700 pl-2';
+            div.className = isError ? 'text-red-400 mb-1 border-l-2 border-red-500/50 pl-2' : 'mb-1 border-l-2 border-slate-600 pl-2';
             div.textContent = msg;
             logsDiv.appendChild(div);
             logsDiv.scrollTop = logsDiv.scrollHeight;
@@ -426,7 +565,7 @@
             };
             currentSyncId = data.sync_id;
 
-            if (!data.src_host || !data.src_user || !data.src_pass) { alert("Missing config!"); return; }
+            if (!data.src_host || !data.src_user || !data.src_pass) { showInfo("Configuration Error", "Please fill in all required Source and Destination fields."); return; }
 
             // Save session
             localStorage.setItem('active_sync_id', currentSyncId);
@@ -434,8 +573,7 @@
 
             startBtn.disabled = true; startBtn.style.opacity = '0.5';
             stopBtn.classList.remove('hidden');
-            document.getElementById('logContainer').classList.remove('hidden');
-            logsDiv.innerHTML = '';
+            logsDiv.innerHTML = ''; // Clear logs
 
             if (data.dry_run) appendLog(">>> DRY RUN MODE: No data will be transferred.", false);
             appendLog("Connecting...", false);
@@ -450,7 +588,7 @@
             if (currentSyncId) {
                 await fetch('/api/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sync_id: currentSyncId }) });
                 localStorage.removeItem('active_sync_id');
-                localStorage.removeItem('active_sync_config');
+                // localStorage.removeItem('active_sync_config'); // Keep config for ease
             }
         });
 
@@ -529,6 +667,7 @@
             if (bulkJobs.length > 0) {
                 renderJobs();
                 document.getElementById('jobsContainer').classList.remove('hidden');
+                document.getElementById('jobsPlaceholder').classList.add('hidden'); // Hide placeholder
                 document.getElementById('btnStartBatch').disabled = false;
             }
         }
@@ -538,20 +677,25 @@
             tbody.innerHTML = '';
             bulkJobs.forEach((job) => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 transition-colors group border-b border-slate-50";
+                tr.className = "hover:bg-slate-900 transition-colors group border-b border-slate-600";
                 tr.innerHTML = `
-                    <td class="px-6 py-4"><div class="font-bold text-slate-700 truncate w-32" title="${job.src_user}">${job.src_user}</div><div class="text-xs text-slate-400">${job.src_host}</div></td>
-                    <td class="px-6 py-4"><div class="font-bold text-slate-700 truncate w-32" title="${job.dest_user}">${job.dest_user}</div><div class="text-xs text-slate-400">${job.dest_host}</div></td>
                     <td class="px-6 py-4">
-                        <span id="status-${job.id}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 mb-1">${job.status}</span>
-                        <div id="lastlog-${job.id}" class="text-xs text-slate-400 truncate w-32 cursor-pointer hover:text-blue-600" onclick="viewLogs('${job.id}')">${job.lastLog || 'Waiting...'}</div>
+                        <div class="flex flex-col gap-1">
+                             <div class="font-bold text-slate-300 break-all" title="${job.src_user}">${job.src_user}</div>
+                             <div class="text-[10px] text-slate-500 uppercase tracking-wide">to</div>
+                             <div class="font-bold text-slate-300 break-all" title="${job.dest_user}">${job.dest_user}</div>
+                        </div>
                     </td>
                     <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden"><div id="prog-${job.id}" class="bg-blue-500 h-full rounded-full transition-all" style="width: ${job.progress}%"></div></div>
-                            <button onclick="viewLogs('${job.id}')" class="text-slate-400 hover:text-blue-600">Logs</button>
-                             <button onclick="stopJob('${job.id}')" class="text-red-300 hover:text-red-500 ${job.status !== 'Running' ? 'hidden' : ''}" id="stop-${job.id}">Stop</button>
-                        </div>
+                        <span id="status-${job.id}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 border border-slate-600 mb-1">${job.status}</span>
+                        <div id="lastlog-${job.id}" class="text-[10px] text-slate-500 truncate w-32 cursor-pointer hover:text-blue-400 transition-colors" onclick="viewLogs('${job.id}')">${job.lastLog || 'Waiting...'}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                         <div class="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden mb-2 border border-slate-600"><div id="prog-${job.id}" class="bg-blue-600 h-full rounded-full transition-all" style="width: ${job.progress}%"></div></div>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                         <button onclick="viewLogs('${job.id}')" class="text-xs font-bold text-slate-500 hover:text-blue-400 mr-3 transition-colors">LOGS</button>
+                         <button onclick="stopJob('${job.id}')" class="text-xs font-bold text-red-400 hover:text-red-300 transition-colors ${job.status !== 'Running' ? 'hidden' : ''}" id="stop-${job.id}">STOP</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -602,7 +746,7 @@
                 saveBatchState();
 
                 const stEl = document.getElementById(`status-${job.id}`);
-                if (stEl) { stEl.textContent = 'Running'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-600 mb-1"; }
+                if (stEl) { stEl.textContent = 'Running'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-900/30 text-blue-400 border border-blue-500/30 mb-1"; }
                 document.getElementById(`stop-${job.id}`).classList.remove('hidden');
 
                 // Get concurrency from slider (default 2 if not found)
@@ -629,7 +773,7 @@
                         if (isErr && msg.includes('Critical Error')) {
                             job.status = 'Error';
                             saveBatchState();
-                            if (stEl) { stEl.textContent = 'Failed'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 mb-1"; }
+                            if (stEl) { stEl.textContent = 'Failed'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-900/30 text-red-400 border border-red-500/30 mb-1"; }
                         }
                     },
                     (prog) => {
@@ -641,7 +785,7 @@
                         if (prog === 100) {
                             job.status = 'Done';
                             saveBatchState();
-                            if (stEl) { stEl.textContent = 'Done'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-600 mb-1"; }
+                            if (stEl) { stEl.textContent = 'Done'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 mb-1"; }
                             document.getElementById(`stop-${job.id}`).classList.add('hidden');
                         }
                     }
@@ -663,7 +807,7 @@
             isBatchRunning = false;
             document.getElementById('btnStartBatch').disabled = false;
             document.getElementById('btnStopBatch').classList.add('hidden');
-            if (shouldStopBatch) alert("Batch Stopped!"); else alert("Done!");
+            if (shouldStopBatch) showInfo("Batch Stopped", "Batch processing has been stopped."); else showInfo("Batch Completed", "All jobs in the queue have been processed.");
 
             // Check if all really done to clear
             const allDone = bulkJobs.every(j => j.status === 'Done' || j.status === 'Error' || j.status === 'Stopped');
@@ -673,8 +817,26 @@
             }
         }
 
+        // --- CUSTOM CONFIRM MODAL LOGIC ---
+        let confirmResolve = null;
+        function showConfirm(title, msg) {
+            return new Promise((resolve) => {
+                document.getElementById('confirmTitle').textContent = title;
+                document.getElementById('confirmMsg').textContent = msg;
+                document.getElementById('confirmModal').classList.remove('hidden');
+                confirmResolve = resolve;
+            });
+        }
+        function closeConfirm(result) {
+            document.getElementById('confirmModal').classList.add('hidden');
+            if (confirmResolve) confirmResolve(result);
+            confirmResolve = null;
+        }
+
         async function stopBatch() {
-            if (!confirm("Stop all running jobs?")) return;
+            const ok = await showConfirm("Stop All Jobs?", "Are you sure you want to stop all running tasks? This action cannot be undone.");
+            if (!ok) return;
+
             shouldStopBatch = true; // Prevent new jobs
 
             // Stop all currently running jobs
@@ -686,7 +848,7 @@
 
         // --- REPORT & MODAL ---
         function downloadReport() {
-            if (!bulkJobs.length) return alert("No jobs.");
+            if (!bulkJobs.length) return showInfo("No Data", "There are no jobs to export.");
             const header = ["Source", "Dest", "Status", "Last Log"];
             const rows = bulkJobs.map(j => [j.src_user, j.dest_user, j.status, `"${j.lastLog}"`]);
             const csv = "data:text/csv;charset=utf-8," + header.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
@@ -704,8 +866,22 @@
             el.scrollTop = el.scrollHeight;
         }
         function closeModal() { document.getElementById('logModal').classList.add('hidden'); currentViewedJobId = null; }
+
+        // --- INFO MODAL LOGIC ---
+        function showInfo(title, msg) {
+            document.getElementById('infoTitle').textContent = title;
+            document.getElementById('infoMsg').textContent = msg;
+            document.getElementById('infoModal').classList.remove('hidden');
+        }
+        function closeInfo() {
+            document.getElementById('infoModal').classList.add('hidden');
+        }
+
         async function stopJob(id, ask = true) {
-            if (ask && !confirm("Stop this job?")) return;
+            if (ask) {
+                const ok = await showConfirm("Stop Job?", "Are you sure you want to stop this migration task?");
+                if (!ok) return;
+            }
             try {
                 await fetch('/api/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sync_id: id }) });
                 // Mark as Stopped in UI immediately 
@@ -714,13 +890,14 @@
                     job.status = 'Stopped';
                     job.lastLog = 'Stopped by user';
                     const stEl = document.getElementById(`status-${id}`);
-                    if (stEl) { stEl.textContent = 'Stopped'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 mb-1"; }
+                    if (stEl) { stEl.textContent = 'Stopped'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 border border-slate-600 mb-1"; }
                     document.getElementById(`stop-${id}`).classList.add('hidden');
                 }
             } catch (e) { }
         }
     </script>
     <script>
+        // ... (pollJobStatus, restoreSession, pollLogs remain essentially the same, just ensuring no loose alerts)
         async function pollJobStatus(job) {
             const sid = job.id;
             let lastLogCount = 0;
@@ -760,9 +937,11 @@
                         const stEl = document.getElementById(`status-${job.id}`);
                         if (stEl) {
                             stEl.textContent = job.status;
-                            stEl.className = job.status === 'Error' ? "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 mb-1" : "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-600 mb-1";
+                            // Dark Mode Badges
+                            if (job.status === 'Error') stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-900/30 text-red-400 border border-red-500/30 mb-1";
+                            else stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-900/30 text-emerald-400 border border-emerald-500/30 mb-1";
                         }
-                        document.getElementById(`stop-${job.id}`).classList.add('hidden');
+                        // document.getElementById(`stop-${job.id}`).classList.add('hidden');
                         saveBatchState();
                         return; // End poll
                     }
@@ -777,25 +956,25 @@
             // 1. Check Single Sync (Legacy)
             const sid = localStorage.getItem('active_sync_id');
             if (sid) {
-                // ... single sync logic ...
+                // Try restore single sync logic
                 try {
                     const res = await fetch(`/api/status/${sid}`);
-                    if (!res.ok) { localStorage.removeItem('active_sync_id'); }
-                    else {
-                        const status = await res.json();
-                        if (status.active) {
-                            const config = JSON.parse(localStorage.getItem('active_sync_config') || '{}');
-                            if (config.src_host) document.getElementById('src_host').value = config.src_host;
-                            if (config.dest_host) document.getElementById('dest_host').value = config.dest_host;
-                            currentSyncId = sid;
-                            startBtn.disabled = true; startBtn.style.opacity = '0.5';
-                            stopBtn.classList.remove('hidden');
-                            document.getElementById('logContainer').classList.remove('hidden');
-                            logsDiv.innerHTML = '';
-                            appendLog(">>> Restoring session connection...", false);
-                            pollLogs(sid);
-                        } else { localStorage.removeItem('active_sync_id'); }
-                    }
+                    const status = await res.json();
+                    if (status.active) {
+                        // Restore UI for Single Sync
+                        const config = JSON.parse(localStorage.getItem('active_sync_config') || '{}');
+                        if (config.src_host) document.getElementById('src_host').value = config.src_host;
+                        if (config.dest_host) document.getElementById('dest_host').value = config.dest_host;
+                        currentSyncId = sid;
+
+                        // Enable Single Tab
+                        switchTab('single');
+                        startBtn.disabled = true; startBtn.style.opacity = '0.5';
+                        stopBtn.classList.remove('hidden');
+                        logsDiv.innerHTML = '';
+                        appendLog(">>> Restoring session connection...", false);
+                        pollLogs(sid);
+                    } else { localStorage.removeItem('active_sync_id'); }
                 } catch (e) { }
             }
 
@@ -808,6 +987,8 @@
                         switchTab('bulk');
                         renderJobs();
                         document.getElementById('jobsContainer').classList.remove('hidden');
+                        document.getElementById('jobsPlaceholder').classList.add('hidden');
+
                         // Assume running/paused if saved
                         if (localStorage.getItem('is_batch_running') === 'true') {
                             document.getElementById('btnStartBatch').disabled = true;
@@ -824,16 +1005,12 @@
                             }
                         });
 
-                        // Restart worker if needed?
-                        // If browser revived, 'isBatchRunning' is true but worker loop is DEAD.
-                        // We must restart worker loop if there are Pending jobs.
+                        // Restart worker if needed (pending jobs exist)
                         const hasPending = bulkJobs.some(j => j.status === 'Pending');
                         if (hasPending && isBatchRunning) {
-                            // Reset flag to allow startBatch to run
                             isBatchRunning = false;
                             startBatch();
                         } else if (runningCount === 0 && !hasPending) {
-                            // All done really
                             cleanupBatch();
                         }
                     }
@@ -855,7 +1032,7 @@
                         // Append new logs
                         if (logs.length > lastLogCount) {
                             const newLogs = logs.slice(lastLogCount);
-                            newLogs.forEach(l => appendLog(l.message, l.is_error || l.i_error)); // Handle typo in app.js if any
+                            newLogs.forEach(l => appendLog(l.message, l.is_error || l.i_error));
                             lastLogCount = logs.length;
                         }
                     }
@@ -879,7 +1056,6 @@
         // Init
         restoreSession();
     </script>
-
 </body>
 
 </html>
