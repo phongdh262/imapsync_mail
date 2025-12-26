@@ -472,6 +472,7 @@
         let bulkJobs = [];
         let isBatchRunning = false;
         let shouldStopBatch = false; // Flag for Stop All
+        let currentViewedJobId = null;
 
         function inferHost(email) {
             if (!email) return 'imap.gmail.com';
@@ -580,7 +581,7 @@
                 document.getElementById(`stop-${job.id}`).classList.remove('hidden');
 
                 // Get concurrency from slider (default 2 if not found)
-                const threadConcurrency = parseInt(document.getElementById('concurrencyRange').value) || 2;
+                const threadConcurrency = parseInt(document.getElementById('concurrency').value) || 2;
                 // MERGE JOB DATA WITH ADV MODES
                 const jobData = { ...job, concurrency: threadConcurrency, sync_id: job.id, ...bulkSettings };
 
@@ -593,7 +594,7 @@
                         if (logEl) logEl.textContent = msg;
 
                         const modal = document.getElementById('logModal');
-                        if (!modal.classList.contains('hidden')) {
+                        if (!modal.classList.contains('hidden') && currentViewedJobId === job.id) {
                             const el = document.getElementById('modalLogContent');
                             const d = document.createElement('div'); d.className = isErr ? "text-red-400 mb-1" : "text-slate-300 mb-1"; d.textContent = msg;
                             el.appendChild(d); el.scrollTop = el.scrollHeight;
@@ -661,13 +662,14 @@
 
         function viewLogs(id) {
             const job = bulkJobs.find(j => j.id === id); if (!job) return;
+            currentViewedJobId = id;
             document.getElementById('modalTitle').textContent = `Logs: ${job.src_user}`;
             const el = document.getElementById('modalLogContent');
             el.innerHTML = job.fullLogs.map(l => `<div class="${l.isError ? 'text-red-400' : 'text-slate-300'} mb-1">${l.msg}</div>`).join('');
             document.getElementById('logModal').classList.remove('hidden');
             el.scrollTop = el.scrollHeight;
         }
-        function closeModal() { document.getElementById('logModal').classList.add('hidden'); }
+        function closeModal() { document.getElementById('logModal').classList.add('hidden'); currentViewedJobId = null; }
         async function stopJob(id, ask = true) {
             if (ask && !confirm("Stop this job?")) return;
             try {

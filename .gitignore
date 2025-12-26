@@ -1,6 +1,5 @@
-__pycache__/
-*.py[cod]
-*$py.class
-.venv/
-.DS_Store
+node_modules/
 .env
+.DS_Store
+*.log
+*.flag

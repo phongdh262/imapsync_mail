@@ -1,0 +1,17 @@
+{
+    "name": "tools_mail",
+    "version": "1.0.0",
+    "description": "IMAP Synchronization Tool",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js",
+        "dev": "node app.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "imapflow": "^1.0.160",
+        "p-limit": "^3.1.0",
+        "cors": "^2.8.5",
+        "body-parser": "^1.20.2"
+    }
+}
