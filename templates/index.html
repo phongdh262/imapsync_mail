@@ -428,6 +428,10 @@
 
             if (!data.src_host || !data.src_user || !data.src_pass) { alert("Missing config!"); return; }
 
+            // Save session
+            localStorage.setItem('active_sync_id', currentSyncId);
+            localStorage.setItem('active_sync_config', JSON.stringify(data));
+
             startBtn.disabled = true; startBtn.style.opacity = '0.5';
             stopBtn.classList.remove('hidden');
             document.getElementById('logContainer').classList.remove('hidden');
@@ -443,7 +447,11 @@
         });
 
         stopBtn.addEventListener('click', async () => {
-            if (currentSyncId) await fetch('/api/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sync_id: currentSyncId }) });
+            if (currentSyncId) {
+                await fetch('/api/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sync_id: currentSyncId }) });
+                localStorage.removeItem('active_sync_id');
+                localStorage.removeItem('active_sync_config');
+            }
         });
 
         async function runSyncStream(data, logCtx, progCtx) {
@@ -461,6 +469,10 @@
                                 const p = JSON.parse(line.replace('data: ', ''));
                                 logCtx(p.message, p.is_error);
                                 if (p.progress !== undefined) progCtx(p.progress);
+
+                                if (p.message === 'Sync completed!' || p.message === 'Stopped by user.') {
+                                    localStorage.removeItem('active_sync_id');
+                                }
                             } catch (e) { }
                         }
                     });
@@ -546,10 +558,17 @@
             });
         }
 
+        function saveBatchState() {
+            localStorage.setItem('active_batch_jobs', JSON.stringify(bulkJobs));
+            localStorage.setItem('is_batch_running', isBatchRunning);
+        }
+
         async function startBatch() {
             if (isBatchRunning) return; isBatchRunning = true; shouldStopBatch = false;
             document.getElementById('btnStartBatch').disabled = true;
             document.getElementById('btnStopBatch').classList.remove('hidden');
+
+            saveBatchState(); // Save initial state
 
             // CAPTURE BULK SETTINGS ONLY ONCE AT START
             const bulkSettings = {
@@ -563,9 +582,13 @@
 
             const runNext = async () => {
                 if (shouldStopBatch) {
-                    // If unexpected stop request (though handled below), just ensure we don't start new
                     if (active === 0) cleanupBatch();
                     return;
+                }
+
+                // Skip already Done/Error (for resume support)
+                while (idx < bulkJobs.length && (bulkJobs[idx].status === 'Done' || bulkJobs[idx].status === 'Error' || bulkJobs[idx].status === 'Stopped')) {
+                    idx++;
                 }
 
                 if (idx >= bulkJobs.length) {
@@ -576,6 +599,8 @@
                 const job = bulkJobs[jobIdx];
 
                 job.status = 'Running';
+                saveBatchState();
+
                 const stEl = document.getElementById(`status-${job.id}`);
                 if (stEl) { stEl.textContent = 'Running'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-600 mb-1"; }
                 document.getElementById(`stop-${job.id}`).classList.remove('hidden');
@@ -603,6 +628,7 @@
                         // Only mark as Failed if strictly Critical
                         if (isErr && msg.includes('Critical Error')) {
                             job.status = 'Error';
+                            saveBatchState();
                             if (stEl) { stEl.textContent = 'Failed'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 mb-1"; }
                         }
                     },
@@ -614,6 +640,7 @@
                         if (progEl) progEl.style.width = prog + '%';
                         if (prog === 100) {
                             job.status = 'Done';
+                            saveBatchState();
                             if (stEl) { stEl.textContent = 'Done'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-600 mb-1"; }
                             document.getElementById(`stop-${job.id}`).classList.add('hidden');
                         }
@@ -637,6 +664,13 @@
             document.getElementById('btnStartBatch').disabled = false;
             document.getElementById('btnStopBatch').classList.add('hidden');
             if (shouldStopBatch) alert("Batch Stopped!"); else alert("Done!");
+
+            // Check if all really done to clear
+            const allDone = bulkJobs.every(j => j.status === 'Done' || j.status === 'Error' || j.status === 'Stopped');
+            if (allDone) {
+                localStorage.removeItem('active_batch_jobs');
+                localStorage.removeItem('is_batch_running');
+            }
         }
 
         async function stopBatch() {
@@ -644,7 +678,7 @@
             shouldStopBatch = true; // Prevent new jobs
 
             // Stop all currently running jobs
-            const activeJobIds = bulkJobs.filter(j => j.status === 'Running').map(j => j.id);
+            const activeJobIds = bulkJobs.filter(j => j.status === 'Running' || j.status === 'Restoring').map(j => j.id);
             for (let id of activeJobIds) {
                 stopJob(id, false); // false = don't confirm for each
             }
@@ -685,6 +719,165 @@
                 }
             } catch (e) { }
         }
+    </script>
+    <script>
+        async function pollJobStatus(job) {
+            const sid = job.id;
+            let lastLogCount = 0;
+            const poll = async () => {
+                if (job.status !== 'Running' && job.status !== 'Restoring') return;
+                try {
+                    const res = await fetch(`/api/status/${sid}`);
+                    const st = await res.json();
+
+                    const logRes = await fetch(`/api/logs/${sid}`);
+                    if (logRes.ok) {
+                        const logs = await logRes.json();
+                        if (logs.length > lastLogCount) {
+                            const newLogs = logs.slice(lastLogCount);
+                            newLogs.forEach(l => {
+                                job.lastLog = l.message;
+                                job.fullLogs.push({ msg: l.message, isError: l.is_error });
+                            });
+                            lastLogCount = logs.length;
+
+                            const logEl = document.getElementById(`lastlog-${job.id}`);
+                            if (logEl) logEl.textContent = job.lastLog;
+                            const lastProg = logs[logs.length - 1].progress;
+                            if (lastProg !== undefined) {
+                                job.progress = lastProg;
+                                const progEl = document.getElementById(`prog-${job.id}`);
+                                if (progEl) progEl.style.width = lastProg + '%';
+                            }
+                        }
+                    }
+
+                    if (!st.active) {
+                        job.status = 'Done';
+                        const hasError = job.fullLogs.some(l => l.isError && l.msg.includes('Critical'));
+                        if (hasError) job.status = 'Error';
+
+                        const stEl = document.getElementById(`status-${job.id}`);
+                        if (stEl) {
+                            stEl.textContent = job.status;
+                            stEl.className = job.status === 'Error' ? "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600 mb-1" : "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-600 mb-1";
+                        }
+                        document.getElementById(`stop-${job.id}`).classList.add('hidden');
+                        saveBatchState();
+                        return; // End poll
+                    }
+                    setTimeout(poll, 3000);
+                } catch (e) { setTimeout(poll, 5000); }
+            };
+            poll();
+        }
+
+        // --- SESSION RECOVERY ---
+        async function restoreSession() {
+            // 1. Check Single Sync (Legacy)
+            const sid = localStorage.getItem('active_sync_id');
+            if (sid) {
+                // ... single sync logic ...
+                try {
+                    const res = await fetch(`/api/status/${sid}`);
+                    if (!res.ok) { localStorage.removeItem('active_sync_id'); }
+                    else {
+                        const status = await res.json();
+                        if (status.active) {
+                            const config = JSON.parse(localStorage.getItem('active_sync_config') || '{}');
+                            if (config.src_host) document.getElementById('src_host').value = config.src_host;
+                            if (config.dest_host) document.getElementById('dest_host').value = config.dest_host;
+                            currentSyncId = sid;
+                            startBtn.disabled = true; startBtn.style.opacity = '0.5';
+                            stopBtn.classList.remove('hidden');
+                            document.getElementById('logContainer').classList.remove('hidden');
+                            logsDiv.innerHTML = '';
+                            appendLog(">>> Restoring session connection...", false);
+                            pollLogs(sid);
+                        } else { localStorage.removeItem('active_sync_id'); }
+                    }
+                } catch (e) { }
+            }
+
+            // 2. Check Bulk Sync
+            const savedBatch = localStorage.getItem('active_batch_jobs');
+            if (savedBatch) {
+                try {
+                    bulkJobs = JSON.parse(savedBatch);
+                    if (bulkJobs.length > 0) {
+                        switchTab('bulk');
+                        renderJobs();
+                        document.getElementById('jobsContainer').classList.remove('hidden');
+                        // Assume running/paused if saved
+                        if (localStorage.getItem('is_batch_running') === 'true') {
+                            document.getElementById('btnStartBatch').disabled = true;
+                            document.getElementById('btnStopBatch').classList.remove('hidden');
+                            isBatchRunning = true;
+                        }
+
+                        let runningCount = 0;
+                        bulkJobs.forEach(job => {
+                            if (job.status === 'Running') {
+                                job.status = 'Restoring';
+                                pollJobStatus(job);
+                                runningCount++;
+                            }
+                        });
+
+                        // Restart worker if needed?
+                        // If browser revived, 'isBatchRunning' is true but worker loop is DEAD.
+                        // We must restart worker loop if there are Pending jobs.
+                        const hasPending = bulkJobs.some(j => j.status === 'Pending');
+                        if (hasPending && isBatchRunning) {
+                            // Reset flag to allow startBatch to run
+                            isBatchRunning = false;
+                            startBatch();
+                        } else if (runningCount === 0 && !hasPending) {
+                            // All done really
+                            cleanupBatch();
+                        }
+                    }
+                } catch (e) { console.error("Batch restore error", e); }
+            }
+        }
+
+        async function pollLogs(sid) {
+            let lastLogCount = 0;
+            const poll = async () => {
+                if (!currentSyncId) return; // Stopped
+                try {
+                    const res = await fetch(`/api/status/${sid}`);
+                    const st = await res.json();
+
+                    const logRes = await fetch(`/api/logs/${sid}`);
+                    if (logRes.ok) {
+                        const logs = await logRes.json();
+                        // Append new logs
+                        if (logs.length > lastLogCount) {
+                            const newLogs = logs.slice(lastLogCount);
+                            newLogs.forEach(l => appendLog(l.message, l.is_error || l.i_error)); // Handle typo in app.js if any
+                            lastLogCount = logs.length;
+                        }
+                    }
+
+                    if (!st.active) {
+                        // Done
+                        startBtn.disabled = false; startBtn.style.opacity = '1';
+                        stopBtn.classList.add('hidden');
+                        appendLog(">>> Process finished.", false);
+                        localStorage.removeItem('active_sync_id');
+                        currentSyncId = null;
+                        return;
+                    }
+
+                    setTimeout(poll, 2000);
+                } catch (e) { setTimeout(poll, 5000); }
+            };
+            poll();
+        }
+
+        // Init
+        restoreSession();
     </script>
 
 </body>

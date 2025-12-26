@@ -7,20 +7,43 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'templates')));
 
+// Ensure logs directory exists
+const LOG_DIR = path.join(__dirname, 'logs');
+if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+}
+
 // Active jobs store: syncId -> { controller: AbortController }
 const activeJobs = new Map();
 
-// Helper to format logs for SSE
-const sendLog = (res, message, isError = false, progress = undefined) => {
-    const data = JSON.stringify({ message, is_error: isError, progress });
-    res.write(`data: ${data}\n\n`);
+// Helper to format logs for SSE and File
+const sendLog = (syncId, res, message, isError = false, progress = undefined) => {
+    const timestamp = new Date().toISOString();
+    const logObj = { timestamp, message, is_error: isError, progress };
+
+    // 1. Write to File
+    if (syncId) {
+        fs.appendFile(path.join(LOG_DIR, `${syncId}.log`), JSON.stringify(logObj) + '\n', (err) => {
+            if (err) console.error("Log write error:", err);
+        });
+    }
+
+    // 2. Send to Client (SSE)
+    if (res && !res.writableEnded) {
+        const data = JSON.stringify({ message, is_error: isError, progress });
+        try {
+            res.write(`data: ${data}\n\n`);
+        } catch (e) {
+            console.error("SSE Write Error:", e.message);
+        }
+    }
 };
 
 // Route: Serve Frontend
@@ -36,8 +59,51 @@ app.post('/api/stop', (req, res) => {
         job.controller.abort();
         activeJobs.delete(sync_id);
         console.log(`Job ${sync_id} stopped by user.`);
+        // Log the stop event to file
+        const logPath = path.join(LOG_DIR, `${sync_id}.log`);
+        if (fs.existsSync(logPath)) {
+            fs.appendFile(logPath, JSON.stringify({ timestamp: new Date().toISOString(), message: "Stopped by user.", is_error: true }) + '\n', () => { });
+        }
     }
     res.json({ status: 'success' });
+});
+
+// Route: Get Job Status (For recovering session)
+app.get('/api/status/:sync_id', (req, res) => {
+    const { sync_id } = req.params;
+    const isActive = activeJobs.has(sync_id);
+    const logPath = path.join(LOG_DIR, `${sync_id}.log`);
+
+    if (!fs.existsSync(logPath) && !isActive) {
+        return res.status(404).json({ error: 'Job not found' });
+    }
+
+    res.json({
+        status: isActive ? 'running' : 'stopped', // simplified status
+        active: isActive
+    });
+});
+
+// Route: Get Full Logs (For restoring UI)
+app.get('/api/logs/:sync_id', (req, res) => {
+    const { sync_id } = req.params;
+    const logPath = path.join(LOG_DIR, `${sync_id}.log`);
+
+    if (fs.existsSync(logPath)) {
+        fs.readFile(logPath, 'utf8', (err, data) => {
+            if (err) return res.status(500).json({ error: 'Read error' });
+            // Parse line by line
+            const logs = data.split('\n')
+                .filter(line => line.trim())
+                .map(line => {
+                    try { return JSON.parse(line); } catch (e) { return null; }
+                })
+                .filter(l => l);
+            res.json(logs);
+        });
+    } else {
+        res.status(404).json({ error: 'Logs not found' });
+    }
 });
 
 // Route: Start Sync
@@ -84,11 +150,11 @@ app.post('/api/sync', async (req, res) => {
     }
 
     try {
-        sendLog(res, "Connecting to source...", false, 0);
+        sendLog(sync_id, res, "Connecting to source...", false, 0);
         await clientSrc.connect();
 
         if (!dry_run) {
-            sendLog(res, "Connecting to destination...");
+            sendLog(sync_id, res, "Connecting to destination...");
             await clientDest.connect();
         }
 
@@ -108,7 +174,7 @@ app.post('/api/sync', async (req, res) => {
         }
 
         if (targetFolders.length === 0) {
-            sendLog(res, "No folders found to sync.", false, 100);
+            sendLog(sync_id, res, "No folders found to sync.", false, 100);
             return; // End
         }
 
@@ -116,7 +182,7 @@ app.post('/api/sync', async (req, res) => {
         const jobQueue = [];
 
         // 2. Scan Folders & Build Queues
-        sendLog(res, `Scanning ${targetFolders.length} folders...`);
+        sendLog(sync_id, res, `Scanning ${targetFolders.length} folders...`);
 
         for (const folder of targetFolders) {
             if (signal.aborted) break;
@@ -125,56 +191,30 @@ app.post('/api/sync', async (req, res) => {
                 const lock = await clientSrc.getMailboxLock(folder);
                 try {
                     const searchCriteria = since_date ? { since: new Date(since_date) } : { all: true };
-                    // imap-flow fetch returns async generator or we can use fetchOne
-                    // We just want IDs first or iterate directly.
-                    // Let's use fetch directly to get UIDs.
-
-                    // Note: imap-flow doesn't have a simple 'search' returning IDs Array like python imaplib.
-                    // We iterate fetch. 
-                    // Actually, let's fetch headers/uid only to build the list -> Safer for progress.
-
-                    // HOWEVER, for performance on huge folders, streaming is better.
-                    // But to show "Total X emails", we need a count first using status or search.
-
                     const status = await clientSrc.status(folder, { messages: true });
-                    // We can't easily filter by date with STATUS. 
-                    // Let's iterate fetch with filtering.
 
-                    // To be efficient, we'll push "tasks" to the queue. 
-                    // A task is (folder, uid).
-
-                    // Use fetch to get UIDs matching criteria
                     for await (const msg of clientSrc.fetch(searchCriteria, { uid: true })) {
                         jobQueue.push({ folder, uid: msg.uid });
                     }
 
-                    sendLog(res, `Folder ${folder}: Found items matching criteria.`);
+                    sendLog(sync_id, res, `Folder ${folder}: Found items matching criteria.`);
                 } catch (err) {
-                    sendLog(res, `Skip folder ${folder}: ${err.message}`, true);
+                    sendLog(sync_id, res, `Skip folder ${folder}: ${err.message}`, true);
                 } finally {
                     lock.release();
                 }
             } catch (err) {
-                sendLog(res, `Error accessing ${folder}: ${err.message}`, true);
+                sendLog(sync_id, res, `Error accessing ${folder}: ${err.message}`, true);
             }
         }
 
         totalEmails = jobQueue.length;
         if (totalEmails === 0) {
-            sendLog(res, "No emails found matching criteria.", false, 100);
+            sendLog(sync_id, res, "No emails found matching criteria.", false, 100);
         } else {
-            sendLog(res, `Total ${totalEmails} emails to sync. Starting...`);
+            sendLog(sync_id, res, `Total ${totalEmails} emails to sync. Starting...`);
 
             // 3. Process Queue
-            // We need to manage connections. imap-flow isn't really multi-thread safe on SAME connection for selecting different folders violently.
-            // Best global strategy: Group by folder to minimize SELECT churn, OR use concurrency carefully.
-            // Appending to dest can be concurrent if dest supports it (most do).
-            // Catch: Reading from SRC requires SELECT. If we have parallel reads on different folders, we need multiple connections.
-            // ImapFlow is single-connection. 'lock' prevents race conditions but blocks.
-
-            // OPTIMIZATION: Process one folder at a time, but read/write messages in parallel WITHIN that folder.
-
-            // Let's regroup the queue by folder
             const tasksByFolder = {};
             for (const t of jobQueue) {
                 if (!tasksByFolder[t.folder]) tasksByFolder[t.folder] = [];
@@ -190,7 +230,7 @@ app.post('/api/sync', async (req, res) => {
                 const uids = tasksByFolder[folder];
 
                 // Lock Source Folder
-                let srcLock, destLock;
+                let srcLock;
                 try {
                     srcLock = await clientSrc.getMailboxLock(folder);
 
@@ -215,31 +255,26 @@ app.post('/api/sync', async (req, res) => {
 
                         try {
                             // Fetch Message Source
-                            // fetchOne is convenient
                             const msg = await clientSrc.fetchOne(uid, { source: true });
                             const raw = msg.source;
 
-                            if (dry_run) {
-                                // Simulate
-                            } else {
-                                // Append to Dest
-                                // append(path, content, flags, date)
+                            if (!dry_run) {
                                 await clientDest.append(folder, raw);
                             }
 
                             processedCount++;
                             const progress = Math.round((processedCount / totalEmails) * 100);
-                            sendLog(res, `Synced ${folder}:${uid}`, false, progress);
+                            sendLog(sync_id, res, `Synced ${folder}:${uid}`, false, progress);
 
                         } catch (err) {
-                            sendLog(res, `Err ${folder}:${uid} - ${err.message}`, true);
+                            sendLog(sync_id, res, `Err ${folder}:${uid} - ${err.message}`, true);
                         }
                     }));
 
                     await Promise.all(promises);
 
                 } catch (err) {
-                    sendLog(res, `Error processing folder ${folder}: ${err.message}`, true);
+                    sendLog(sync_id, res, `Error processing folder ${folder}: ${err.message}`, true);
                 } finally {
                     if (srcLock) srcLock.release();
                 }
@@ -247,14 +282,14 @@ app.post('/api/sync', async (req, res) => {
         }
 
         if (!signal.aborted) {
-            sendLog(res, "Sync completed!", false, 100);
+            sendLog(sync_id, res, "Sync completed!", false, 100);
         }
 
     } catch (err) {
         if (signal.aborted || err.message === 'Stopped by user.') {
-            sendLog(res, "Stopped by user.", true);
+            sendLog(sync_id, res, "Stopped by user.", true);
         } else {
-            sendLog(res, `Critical Error: ${err.message}`, true);
+            sendLog(sync_id, res, `Critical Error: ${err.message}`, true);
         }
     } finally {
         // Cleanup
