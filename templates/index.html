@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IMAP Sync Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <!-- FONTS: Inter for UI, JetBrains Mono for Code/Logs -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -818,9 +819,27 @@
 
                 // DEBUG: Trace execution
                 console.log("Sending request to /api/sync", data);
-                appendLog(`[DEBUG] Sending Request: ${data.sync_id}`, false);
+                // appendLog(`[DEBUG] Sending Request: ${data.sync_id}`, false);
 
-                await runSyncStream(data, (msg, isErr) => appendLog(msg, isErr), () => { });
+
+
+                await runSyncStream(data, (msg, isErr) => {
+                    appendLog(msg, isErr);
+
+                    // Client-side Stat Counting (Approximation)
+                    if (msg.includes('Synced')) {
+                        let count = parseInt(document.getElementById('stat_emails').textContent.replace(/,/g, '')) || 0;
+                        document.getElementById('stat_emails').textContent = (count + 1).toLocaleString();
+                    }
+                    if (msg === 'Sync completed!') {
+                        confetti({
+                            particleCount: 150,
+                            spread: 70,
+                            origin: { y: 0.6 },
+                            colors: ['#60a5fa', '#34d399', '#f472b6']
+                        });
+                    }
+                }, () => { });
 
                 document.getElementById('syncArrow').classList.remove('pulse-active');
                 startBtn.disabled = false; startBtn.style.opacity = '1';
