@@ -23,6 +23,12 @@ if (!fs.existsSync(LOG_DIR)) {
 // Active jobs store: syncId -> { controller: AbortController }
 const activeJobs = new Map();
 
+// Global Stats (In-memory)
+let serverStats = {
+    totalEmails: 0,
+    totalBytes: 0
+};
+
 // Helper to format logs for SSE and File
 const sendLog = (syncId, res, message, isError = false, progress = undefined) => {
     const timestamp = new Date().toISOString();
@@ -57,6 +63,10 @@ app.post('/api/stop', (req, res) => {
     if (activeJobs.has(sync_id)) {
         const job = activeJobs.get(sync_id);
         job.controller.abort();
+        // Force close connections immediately
+        if (job.clients) {
+            job.clients.forEach(c => { try { c.close(); } catch (e) { } });
+        }
         activeJobs.delete(sync_id);
         console.log(`Job ${sync_id} stopped by user.`);
         // Log the stop event to file
@@ -106,12 +116,54 @@ app.get('/api/logs/:sync_id', (req, res) => {
     }
 });
 
+// Route: Get Stats
+app.get('/api/stats', (req, res) => {
+    res.json(serverStats);
+});
+
+// Route: Reset Stats
+app.post('/api/stats/reset', (req, res) => {
+    serverStats = { totalEmails: 0, totalBytes: 0 };
+    res.json({ success: true });
+});
+
+// Route: Test Connection
+app.post('/api/test-connection', async (req, res) => {
+    const { host, port, user, pass, secure } = req.body;
+
+    // Safety check
+    if (!host || !user || !pass) {
+        return res.json({ success: false, error: "Missing Host, User or Password" });
+    }
+
+    const client = new ImapFlow({
+        host: host,
+        port: parseInt(port) || 993,
+        secure: secure === true, // Explicit bool
+        auth: { user, pass },
+        logger: false,
+        tls: { rejectUnauthorized: false },
+        emitLogs: false
+    });
+
+    try {
+        await client.connect();
+        await client.logout();
+        res.json({ success: true });
+    } catch (err) {
+        res.json({ success: false, error: err.message || "Connection failed" });
+    } finally {
+        // Ensure closed
+        client.close();
+    }
+});
+
 // Route: Start Sync
 app.post('/api/sync', async (req, res) => {
     const {
         sync_id,
-        src_host, src_port, src_user, src_pass,
-        dest_host, dest_port, dest_user, dest_pass,
+        src_host, src_port, src_user, src_pass, src_secure,
+        dest_host, dest_port, dest_user, dest_pass, dest_secure,
         concurrency = 1,
         dry_run = false,
         since_date = '',
@@ -126,15 +178,20 @@ app.post('/api/sync', async (req, res) => {
 
     const controller = new AbortController();
     const signal = controller.signal;
-    activeJobs.set(sync_id, { controller });
+    const clients = [];
+    activeJobs.set(sync_id, { controller, clients });
 
     const clientSrc = new ImapFlow({
         host: src_host,
         port: parseInt(src_port) || 993,
-        secure: true,
+        secure: src_secure === true,
         auth: { user: src_user, pass: src_pass },
         logger: false,
-        tls: { rejectUnauthorized: false } // Accept self-signed certs
+        tls: { rejectUnauthorized: false }
+    });
+    clients.push(clientSrc);
+    clientSrc.on('error', (err) => {
+        console.error("Source Client Error:", err);
     });
 
     let clientDest = null;
@@ -142,10 +199,14 @@ app.post('/api/sync', async (req, res) => {
         clientDest = new ImapFlow({
             host: dest_host,
             port: parseInt(dest_port) || 993,
-            secure: true,
+            secure: dest_secure === true,
             auth: { user: dest_user, pass: dest_pass },
             logger: false,
             tls: { rejectUnauthorized: false }
+        });
+        clients.push(clientDest);
+        clientDest.on('error', (err) => {
+            console.error("Dest Client Error:", err);
         });
     }
 
@@ -310,6 +371,9 @@ app.post('/api/sync', async (req, res) => {
 
                             if (!dry_run) {
                                 await clientDest.append(destFolder, raw);
+                                // Update Stats
+                                serverStats.totalEmails++;
+                                serverStats.totalBytes += raw.length;
                             }
 
                             processedCount++;
@@ -343,8 +407,12 @@ app.post('/api/sync', async (req, res) => {
         }
     } finally {
         // Cleanup
-        if (clientSrc) await clientSrc.logout();
-        if (clientDest) await clientDest.logout();
+        if (clientSrc) {
+            try { await clientSrc.logout(); } catch (e) { }
+        }
+        if (clientDest) {
+            try { await clientDest.logout(); } catch (e) { }
+        }
         activeJobs.delete(sync_id);
         res.end();
     }

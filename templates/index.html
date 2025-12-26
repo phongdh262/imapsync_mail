@@ -102,8 +102,44 @@
                             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                 </button>
+
             </div>
         </header>
+
+        <!-- STATS DASHBOARD -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 fade-in">
+            <div class="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50 flex items-center gap-4">
+                <div class="p-3 bg-blue-500/10 rounded-xl text-blue-400">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Emails</div>
+                    <div class="text-xl font-bold text-white font-mono" id="stat_emails">0</div>
+                </div>
+            </div>
+            <div class="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50 flex items-center gap-4">
+                <div class="p-3 bg-emerald-500/10 rounded-xl text-emerald-400">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-0.5">Data Transferred</div>
+                    <div class="text-xl font-bold text-white font-mono" id="stat_bytes">0 B</div>
+                </div>
+                <button onclick="resetStats()" title="Reset Stats"
+                    class="p-2 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-700 text-slate-500 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+        </div>
 
         <!-- MAIN LAYOUT: EVEN SPLIT SCREEN (50/50) -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start h-full">
@@ -127,16 +163,34 @@
                                 <input type="text" id="src_host"
                                     class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none text-sm transition-all text-white placeholder-slate-400 shadow-inner"
                                     placeholder="Host (e.g. imap.gmail.com)">
-                                <div class="grid grid-cols-3 gap-3">
-                                    <input type="text" id="src_user"
-                                        class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
-                                        placeholder="Email / User">
-                                    <input type="number" id="src_port" value="993"
-                                        class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-center font-mono text-white shadow-inner">
-                                </div>
-                                <input type="password" id="src_pass"
+                                <input type="text" id="src_user"
                                     class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
-                                    placeholder="Password">
+                                    placeholder="Email / User">
+                                <div class="relative">
+                                    <input type="password" id="src_pass"
+                                        class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
+                                        placeholder="Password (App Password for Gmail/Outlook)">
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="relative w-24">
+                                        <input type="number" id="src_port" value="993"
+                                            class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-blue-400 outline-none text-sm text-center font-mono text-white shadow-inner">
+                                    </div>
+                                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                                        <input type="checkbox" id="src_secure" checked onchange="togglePort('src')"
+                                            class="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-500 focus:ring-offset-slate-800">
+                                        <span class="text-xs font-bold text-slate-400">SSL</span>
+                                    </label>
+                                    <div class="flex-1"></div>
+                                    <button onclick="testConnection('src')"
+                                        class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-blue-400 font-bold rounded-lg border border-slate-600 hover:border-blue-400 transition-all text-xs flex items-center gap-1.5 whitespace-nowrap">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Test Conn
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -153,16 +207,34 @@
                                 <input type="text" id="dest_host"
                                     class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 outline-none text-sm transition-all text-white placeholder-slate-400 shadow-inner"
                                     placeholder="Host (e.g. imap.office.com)">
-                                <div class="grid grid-cols-3 gap-3">
-                                    <input type="text" id="dest_user"
-                                        class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
-                                        placeholder="Email / User">
-                                    <input type="number" id="dest_port" value="993"
-                                        class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-center font-mono text-white shadow-inner">
-                                </div>
-                                <input type="password" id="dest_pass"
+                                <input type="text" id="dest_user"
                                     class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
-                                    placeholder="Password">
+                                    placeholder="Email / User">
+                                <div class="relative">
+                                    <input type="password" id="dest_pass"
+                                        class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-white placeholder-slate-400 shadow-inner"
+                                        placeholder="Password (App Password)">
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="relative w-24">
+                                        <input type="number" id="dest_port" value="993"
+                                            class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 focus:border-indigo-400 outline-none text-sm text-center font-mono text-white shadow-inner">
+                                    </div>
+                                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                                        <input type="checkbox" id="dest_secure" checked onchange="togglePort('dest')"
+                                            class="w-4 h-4 rounded border-slate-500 bg-slate-700 text-indigo-500 focus:ring-offset-slate-800">
+                                        <span class="text-xs font-bold text-slate-400">SSL</span>
+                                    </label>
+                                    <div class="flex-1"></div>
+                                    <button onclick="testConnection('dest')"
+                                        class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-indigo-400 font-bold rounded-lg border border-slate-600 hover:border-indigo-400 transition-all text-xs flex items-center gap-1.5 whitespace-nowrap">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        Test Conn
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -193,7 +265,8 @@
                                         </svg>
                                     </div>
                                     <label for="smartMap"
-                                        class="text-sm font-medium text-slate-300 pointer-events-none">Smart Map</label>
+                                        class="text-sm font-medium text-slate-300 pointer-events-none">Smart
+                                        Map</label>
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <div class="relative flex items-center">
@@ -360,6 +433,9 @@
                                 <button onclick="stopBatch()" id="btnStopBatch"
                                     class="hidden col-span-2 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl border border-red-500/20 hover:bg-red-500/20">Stop
                                     All</button>
+                                <button onclick="retryFailed()" id="btnRetryFailed"
+                                    class="hidden col-span-2 py-3 bg-yellow-500/10 text-yellow-500 font-bold rounded-xl border border-yellow-500/20 hover:bg-yellow-500/20 transition-all">Retry
+                                    Failed Jobs ↻</button>
                             </div>
                         </div>
                     </div>
@@ -616,10 +692,12 @@
                 src_port: document.getElementById('src_port').value,
                 src_user: document.getElementById('src_user').value,
                 src_pass: document.getElementById('src_pass').value,
+                src_secure: document.getElementById('src_secure').checked,
                 dest_host: document.getElementById('dest_host').value,
                 dest_port: document.getElementById('dest_port').value,
                 dest_user: document.getElementById('dest_user').value,
                 dest_pass: document.getElementById('dest_pass').value,
+                dest_secure: document.getElementById('dest_secure').checked,
                 concurrency: concurrencyInput.value,
                 sync_id: generateUUID(),
                 // NEW ADVANCED PARAMS
@@ -723,11 +801,16 @@
                 let job = { status: 'Pending', progress: 0, id: generateUUID(), fullLogs: [] };
 
                 if (p.length >= 8) {
-                    Object.assign(job, { src_host: p[0], src_port: p[1], src_user: p[2], src_pass: p[3], dest_host: p[4], dest_port: p[5], dest_user: p[6], dest_pass: p[7] });
+                    Object.assign(job, {
+                        src_host: p[0], src_port: p[1], src_user: p[2], src_pass: p[3],
+                        src_secure: (p[1] == '993'),
+                        dest_host: p[4], dest_port: p[5], dest_user: p[6], dest_pass: p[7],
+                        dest_secure: (p[5] == '993')
+                    });
                 } else if (p.length >= 4) {
                     Object.assign(job, {
-                        src_host: defSrcHost || inferHost(p[0]), src_port: '993', src_user: p[0], src_pass: p[1],
-                        dest_host: defDestHost || inferHost(p[2]), dest_port: '993', dest_user: p[2], dest_pass: p[3]
+                        src_host: defSrcHost || inferHost(p[0]), src_port: '993', src_user: p[0], src_pass: p[1], src_secure: true,
+                        dest_host: defDestHost || inferHost(p[2]), dest_port: '993', dest_user: p[2], dest_pass: p[3], dest_secure: true
                     });
                 } else return;
                 bulkJobs.push(job);
@@ -1206,14 +1289,19 @@
                                     <p>Chế độ này dùng để test hoặc chạy chuyển đổi cho **1 tài khoản duy nhất**.
                                     </p>
                                     <ul class="list-disc pl-5 space-y-2">
-                                        <li><strong class="text-slate-200">Source (Nguồn):</strong> Nhập thông tin
-                                            server cũ (Host, Email, Password). Port mặc định là 993 (SSL).</li>
-                                        <li><strong class="text-slate-200">Destination (Đích):</strong> Nhập thông
-                                            tin
-                                            server mới.</li>
-                                        <li>Bấm <strong>"Start Migration"</strong> để bắt đầu. Log chi tiết sẽ hiện
-                                            ở
-                                            cột bên phải.</li>
+                                        <li><strong class="text-slate-200">Cấu hình:</strong> Nhập Host/User/Pass.
+                                            <span class="text-slate-500 text-xs block mt-1">💡 Dùng nút <strong>Test
+                                                    Conn</strong> để kiểm tra đăng nhập trước khi chạy. Bỏ tích
+                                                <strong>SSL</strong> nếu dùng Port 143.</span>
+                                        </li>
+                                        <li><strong class="text-slate-200">Thao tác:</strong>
+                                            Bấm <strong>Start</strong> để chạy. Bấm <strong>Stop</strong> để dừng ngay
+                                            lập tức.
+                                        </li>
+                                        <li><strong class="text-slate-200">Dashboard:</strong>
+                                            Theo dõi tiến độ và dùng nút <strong>Reset (Vòng tròn)</strong> để đặt lại
+                                            số đếm về 0.
+                                        </li>
                                     </ul>
                                 </div>
                             </section>
@@ -1262,6 +1350,8 @@
                                         cùng
                                         lúc.
                                     </p>
+                                    <p class="text-xs text-blue-400 italic">💡 Nếu có tài khoản bị lỗi (Error), nút
+                                        <strong>Retry Failed Jobs</strong> sẽ hiện ra để bạn chạy lại riêng chúng.</p>
                                 </div>
                             </section>
 
@@ -1315,7 +1405,10 @@
                                         không
                                         hoạt động.</p>
                                     <p>⚠️ <strong>Outlook/Office365:</strong> Một số tổ chức chặn IMAP, cần liên hệ
-                                        admin để bật.</p>
+                                        admin mở quyền. Dùng App Password nếu có 2FA.</p>
+                                    <p>⚠️ <strong>SSL/TLS:</strong> Mặc định Port 993 dùng SSL (Secure). Nếu server cũ
+                                        không hỗ trợ SSL (thường là Port 143), hãy bỏ tích ô <strong>SSL</strong> cạnh ô
+                                        Port.</p>
                                     <p>⚠️ <strong>Không đóng tab trình duyệt:</strong> Mặc dù hệ thống có cơ chế
                                         khôi
                                         phục, nhưng để ổn định nhất, hãy giữ tab trình duyệt mở khi đang chạy Batch
@@ -1323,7 +1416,6 @@
                                     </p>
                                 </div>
                             </section>
-
                         </div>
                     </div>
                 </div>
@@ -1338,6 +1430,122 @@
     </div>
 
     <script>
+        function togglePort(type) {
+            const secure = document.getElementById(type + '_secure').checked;
+            document.getElementById(type + '_port').value = secure ? 993 : 143;
+        }
+
+        async function testConnection(type) {
+            const host = document.getElementById(type + '_host').value;
+            const port = document.getElementById(type + '_port').value;
+            const user = document.getElementById(type + '_user').value;
+            const pass = document.getElementById(type + '_pass').value;
+            const secure = document.getElementById(type + '_secure').checked;
+
+            if (!host || !user || !pass) {
+                showInfo("Missing Info", "Please enter Host, User, and Password.", true);
+                return;
+            }
+
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Testing...`;
+
+            try {
+                const res = await fetch('/api/test-connection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ host, port, user, pass, secure })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showInfo("Success", "Connection successful! ✅", false);
+                } else {
+                    showInfo("Connection Failed", data.error, true);
+                }
+            } catch (e) {
+                showInfo("Error", e.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Stats Polling
+        function formatBytes(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function resetStats() {
+            const ok = await showConfirm("Reset Statistics?", "Are you sure you want to reset all migration statistics?");
+            if (!ok) return;
+
+            try {
+                const res = await fetch('/api/stats/reset', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showInfo("Stats Reset", "Migration statistics have been reset.", false);
+                    // Immediately update UI
+                    document.getElementById('stat_emails').textContent = '0';
+                    document.getElementById('stat_bytes').textContent = '0 B';
+                } else {
+                    showInfo("Error", "Failed to reset statistics.", true);
+                }
+            } catch (e) {
+                showInfo("Error", "Network error while resetting statistics: " + e.message, true);
+            }
+        }
+
+        setInterval(async () => {
+            try {
+                const res = await fetch('/api/stats');
+                const stats = await res.json();
+                document.getElementById('stat_emails').textContent = stats.totalEmails.toLocaleString();
+                document.getElementById('stat_bytes').textContent = formatBytes(stats.totalBytes);
+
+                // Also check for failures to show Retry button
+                const hasFailed = bulkJobs.some(j => j.status === 'Error');
+                const retryBtn = document.getElementById('btnRetryFailed');
+                if (retryBtn) {
+                    if (hasFailed && !isBatchRunning) {
+                        retryBtn.classList.remove('hidden');
+                    } else {
+                        retryBtn.classList.add('hidden');
+                    }
+                }
+
+            } catch (e) { }
+        }, 3000);
+
+        function retryFailed() {
+            let count = 0;
+            bulkJobs.forEach(job => {
+                if (job.status === 'Error') {
+                    job.status = 'Pending';
+                    job.progress = 0;
+                    job.lastLog = 'Retrying...';
+                    // Reset UI
+                    const stEl = document.getElementById(`status-${job.id}`);
+                    if (stEl) { stEl.textContent = 'Pending'; stEl.className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-700 text-slate-400 border border-slate-600 mb-1"; }
+                    count++;
+                }
+            });
+
+            if (count > 0) {
+                saveBatchState();
+                startBatch();
+                showInfo("Retrying", `Restarting ${count} failed jobs...`, false);
+            } else {
+                showInfo("No Failures", "No failed jobs to retry.", true);
+            }
+        }
+
         function showGuide() {
             document.getElementById('guideModal').classList.remove('hidden');
         }
@@ -1347,6 +1555,9 @@
         function scrollToSection(id) {
             document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+
+        // Init
+        restoreSession();
     </script>
 </body>
 
