@@ -26,6 +26,7 @@
             backdrop-filter: blur(10px);
         }
 
+        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -40,14 +41,7 @@
             border-radius: 4px;
         }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .fade-in-fast {
-            animation: fadeIn 0.15s ease-out;
-        }
-
+        /* Animations */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -59,7 +53,37 @@
                 transform: translateY(0);
             }
         }
+
+        @keyframes pulse-slow {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.95);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .fade-in-fast {
+            animation: fadeIn 0.15s ease-out;
+        }
+
+        .pulse-active {
+            animation: pulse-slow 2s infinite;
+            color: #60a5fa;
+        }
     </style>
+
+
+
 </head>
 
 <body class="bg-slate-900 min-h-screen text-slate-200 antialiased selection:bg-blue-500 selection:text-white">
@@ -149,7 +173,7 @@
 
                 <!-- SINGLE SYNC INPUTS -->
                 <div id="input-single" class="fade-in space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex flex-col gap-6 items-stretch">
                         <!-- Source Card (Lighter Slate-800) -->
                         <div
                             class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-600 transition-all hover:border-blue-400/50 group">
@@ -192,6 +216,16 @@
                                     </button>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Pulse Arrow (Visual Connector) -->
+                        <div class="flex flex-col items-center justify-center">
+                            <svg id="syncArrow"
+                                class="w-8 h-8 text-slate-600 transition-all duration-500 transform rotate-90"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
                         </div>
 
                         <!-- Destination Card (Lighter Slate-800) -->
@@ -252,6 +286,7 @@
                                 </svg>
                             </div>
                         </button>
+
                         <div id="advConfig" class="hidden space-y-4 pt-4 border-t border-slate-600 mt-2 fade-in">
                             <div class="flex items-center gap-6">
                                 <div class="flex items-center gap-3">
@@ -659,14 +694,41 @@
         });
 
         function appendLog(msg, isError = false) {
-            // If logsDiv has placeholder, remove it
+            // Remove placeholder
             if (logsDiv.querySelector('.italic')) logsDiv.innerHTML = '';
 
             const div = document.createElement('div');
-            div.className = isError ? 'text-red-400 mb-1 border-l-2 border-red-500/50 pl-2' : 'mb-1 border-l-2 border-slate-600 pl-2';
-            div.textContent = msg;
+            let content = msg;
+
+            // Simple Syntax Highlighting
+            if (!isError) {
+                if (msg.includes('Synced')) content = `<span class="text-blue-400 font-bold">Synced</span> ${msg.replace('Synced', '').replace('->', '<span class="text-slate-500">-></span>')}`;
+                else if (msg.includes('Mapping')) content = `<span class="text-purple-400 font-bold">Mapping</span> ${msg.replace('Mapping', '')}`;
+                else if (msg.includes('Connecting')) content = `<span class="text-yellow-400 font-bold">Connecting</span> ${msg.replace('Connecting', '')}`;
+                else if (msg.includes('Completed') || msg.includes('Success')) content = `<span class="text-green-400 font-bold">✓</span> <span class="text-green-300">${msg}</span>`;
+            }
+
+            div.className = isError
+                ? 'text-red-400 mb-1 border-l-2 border-red-500/50 pl-2 font-mono text-xs'
+                : 'mb-1 border-l-2 border-slate-700 pl-2 font-mono text-xs text-slate-300 hover:bg-slate-800/30 transition-colors';
+
+            div.innerHTML = content;
             logsDiv.appendChild(div);
             logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function downloadLog() {
+            const text = logsDiv.innerText;
+            if (!text) { showInfo("No Logs", "Terminal is empty.", true); return; }
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `imap-sync-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.log`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }
 
 
@@ -686,49 +748,68 @@
         }
 
         startBtn.addEventListener('click', async () => {
-            const folderMap = parseFolderMapping();
-            const data = {
-                src_host: document.getElementById('src_host').value,
-                src_port: document.getElementById('src_port').value,
-                src_user: document.getElementById('src_user').value,
-                src_pass: document.getElementById('src_pass').value,
-                src_secure: document.getElementById('src_secure').checked,
-                dest_host: document.getElementById('dest_host').value,
-                dest_port: document.getElementById('dest_port').value,
-                dest_user: document.getElementById('dest_user').value,
-                dest_pass: document.getElementById('dest_pass').value,
-                dest_secure: document.getElementById('dest_secure').checked,
-                concurrency: concurrencyInput.value,
-                sync_id: generateUUID(),
-                // NEW ADVANCED PARAMS
-                dry_run: document.getElementById('dryRun').checked,
-                smart_map: document.getElementById('smartMap').checked,
-                since_date: formatIMAPDate(document.getElementById('sinceDate').value),
-                exclude_folders: document.getElementById('excludeFolders').value,
-                folder_mapping: folderMap
-            };
-            currentSyncId = data.sync_id;
+            try {
+                console.log("Start Button Clicked");
+                // Verify Critical Elements exist
+                if (!document.getElementById('syncArrow')) throw new Error("Missing UI Element: syncArrow");
+                if (!document.getElementById('folderMapping')) console.warn("Missing Bulk Mapping (Non-fatal)");
 
-            if (!data.src_host || !data.src_user || !data.src_pass) { showInfo("Configuration Error", "Please fill in all required Source and Destination fields."); return; }
+                const folderMap = parseFolderMapping();
+                const data = {
+                    src_host: document.getElementById('src_host').value,
+                    src_port: document.getElementById('src_port').value,
+                    src_user: document.getElementById('src_user').value,
+                    src_pass: document.getElementById('src_pass').value,
+                    src_secure: document.getElementById('src_secure').checked,
+                    dest_host: document.getElementById('dest_host').value,
+                    dest_port: document.getElementById('dest_port').value,
+                    dest_user: document.getElementById('dest_user').value,
+                    dest_pass: document.getElementById('dest_pass').value,
+                    dest_secure: document.getElementById('dest_secure').checked,
+                    concurrency: concurrencyInput.value,
+                    sync_id: generateUUID(),
+                    // NEW ADVANCED PARAMS
+                    dry_run: document.getElementById('dryRun').checked,
+                    smart_map: document.getElementById('smartMap').checked,
+                    since_date: formatIMAPDate(document.getElementById('sinceDate').value),
+                    exclude_folders: document.getElementById('excludeFolders').value,
+                    folder_mapping: folderMap
+                };
+                currentSyncId = data.sync_id;
 
-            // Save session
-            localStorage.setItem('active_sync_id', currentSyncId);
-            localStorage.setItem('active_sync_config', JSON.stringify(data));
+                if (!data.src_host || !data.src_user || !data.src_pass) { showInfo("Configuration Error", "Please fill in all required Source and Destination fields."); return; }
 
-            startBtn.disabled = true; startBtn.style.opacity = '0.5';
-            stopBtn.classList.remove('hidden');
-            logsDiv.innerHTML = ''; // Clear logs
+                // Save session
+                localStorage.setItem('active_sync_id', currentSyncId);
+                localStorage.setItem('active_sync_config', JSON.stringify(data));
 
-            if (Object.keys(folderMap).length > 0) {
-                appendLog(`>>> Folder Mapping Configured: ${Object.keys(folderMap).length} rules.`, false);
+                startBtn.disabled = true; startBtn.style.opacity = '0.5';
+                stopBtn.classList.remove('hidden');
+                logsDiv.innerHTML = ''; // Clear logs
+
+                if (Object.keys(folderMap).length > 0) {
+                    appendLog(`>>> Folder Mapping Configured: ${Object.keys(folderMap).length} rules.`, false);
+                }
+                if (data.dry_run) appendLog(">>> DRY RUN MODE: No data will be transferred.", false);
+                appendLog("Connecting... (Waiting for Server Response)", false);
+
+                document.getElementById('syncArrow').classList.add('pulse-active');
+
+                // DEBUG: Trace execution
+                console.log("Sending request to /api/sync", data);
+                appendLog(`[DEBUG] Sending Request: ${data.sync_id}`, false);
+
+                await runSyncStream(data, (msg, isErr) => appendLog(msg, isErr), () => { });
+
+                document.getElementById('syncArrow').classList.remove('pulse-active');
+                startBtn.disabled = false; startBtn.style.opacity = '1';
+                stopBtn.classList.add('hidden');
+
+            } catch (err) {
+                console.error(err);
+                alert("Start Error: " + err.message);
+                startBtn.disabled = false; startBtn.style.opacity = '1';
             }
-            if (data.dry_run) appendLog(">>> DRY RUN MODE: No data will be transferred.", false);
-            appendLog("Connecting...", false);
-
-            await runSyncStream(data, (msg, isErr) => appendLog(msg, isErr), () => { });
-
-            startBtn.disabled = false; startBtn.style.opacity = '1';
-            stopBtn.classList.add('hidden');
         });
 
         stopBtn.addEventListener('click', async () => {
@@ -1351,7 +1432,8 @@
                                         lúc.
                                     </p>
                                     <p class="text-xs text-blue-400 italic">💡 Nếu có tài khoản bị lỗi (Error), nút
-                                        <strong>Retry Failed Jobs</strong> sẽ hiện ra để bạn chạy lại riêng chúng.</p>
+                                        <strong>Retry Failed Jobs</strong> sẽ hiện ra để bạn chạy lại riêng chúng.
+                                    </p>
                                 </div>
                             </section>
 

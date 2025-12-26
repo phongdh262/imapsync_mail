@@ -5,12 +5,24 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
+const dns = require('dns');
+
+// Force IPv4 First (Fix for Node.js slow DNS/IPv6 fallback)
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
+// Request Logger Middleware
+app.use((req, res, next) => {
+    const time = new Date().toISOString();
+    console.log(`[REQ ${time}] ${req.method} ${req.url}`);
+    next();
+});
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'templates')));
 
@@ -170,6 +182,14 @@ app.post('/api/sync', async (req, res) => {
         exclude_folders = ''
     } = req.body;
 
+    // Safe Boolean Parsing (Handle "true" string vs true boolean)
+    const isSrcSecure = String(src_secure) === 'true' || src_secure === true;
+    const isDestSecure = String(dest_secure) === 'true' || dest_secure === true;
+    const isDryRun = String(dry_run) === 'true' || dry_run === true;
+
+    // DEBUG: Log incoming params to check for type issues
+    console.log(`[SYNC-REQ] ID:${sync_id} Src:${src_host}:${src_port}(SSL:${isSrcSecure}) Dest:${dest_host}:${dest_port}(SSL:${isDestSecure}) DryRun:${isDryRun}`);
+
     // SSE Setup
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -184,25 +204,38 @@ app.post('/api/sync', async (req, res) => {
     const clientSrc = new ImapFlow({
         host: src_host,
         port: parseInt(src_port) || 993,
-        secure: src_secure === true,
+        secure: isSrcSecure,
         auth: { user: src_user, pass: src_pass },
-        logger: false,
-        tls: { rejectUnauthorized: false }
+        logger: (log) => {
+            // Simple timestamp logger
+            const time = new Date().toISOString().split('T')[1].slice(0, -1);
+            console.log(`[SRC-LOG ${time}] ${log.msg}`);
+        },
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 30000
     });
     clients.push(clientSrc);
     clientSrc.on('error', (err) => {
-        console.error("Source Client Error:", err);
+        console.error(`[Source Error] ${src_host}:`, err.message);
     });
 
     let clientDest = null;
-    if (!dry_run) {
+    if (!isDryRun) {
         clientDest = new ImapFlow({
             host: dest_host,
             port: parseInt(dest_port) || 993,
-            secure: dest_secure === true,
+            secure: isDestSecure,
             auth: { user: dest_user, pass: dest_pass },
-            logger: false,
-            tls: { rejectUnauthorized: false }
+            logger: (log) => {
+                const time = new Date().toISOString().split('T')[1].slice(0, -1);
+                console.log(`[DEST-LOG ${time}] ${log.msg}`);
+            },
+            tls: { rejectUnauthorized: false },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 30000
         });
         clients.push(clientDest);
         clientDest.on('error', (err) => {
@@ -210,13 +243,45 @@ app.post('/api/sync', async (req, res) => {
         });
     }
 
-    try {
-        sendLog(sync_id, res, "Connecting to source...", false, 0);
-        await clientSrc.connect();
+    // Helper: Timeout Wrapper with Abort Signal
+    const withTimeout = (promise, ms, name, signal) => {
+        let timer;
+        return new Promise((resolve, reject) => {
+            timer = setTimeout(() => {
+                reject(new Error(`${name} Connection timed out after ${ms}ms`));
+            }, ms);
 
-        if (!dry_run) {
+            // Listen for abort
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    clearTimeout(timer);
+                    reject(new Error("Stopped by user."));
+                }, { once: true });
+            }
+
+            promise
+                .then(res => {
+                    clearTimeout(timer);
+                    resolve(res);
+                })
+                .catch(err => {
+                    clearTimeout(timer);
+                    reject(err);
+                });
+        });
+    };
+
+    try {
+        if (signal.aborted) throw new Error("Stopped by user before connection.");
+
+        sendLog(sync_id, res, "Connecting to source...", false, 0);
+        await withTimeout(clientSrc.connect(), 30000, "Source", signal);
+
+        if (signal.aborted) throw new Error("Stopped by user.");
+
+        if (!isDryRun) {
             sendLog(sync_id, res, "Connecting to destination...");
-            await clientDest.connect();
+            await withTimeout(clientDest.connect(), 30000, "Destination", signal);
         }
 
         if (signal.aborted) throw new Error("Stopped by user.");
