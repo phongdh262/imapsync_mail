@@ -173,10 +173,10 @@
 
                 <!-- SINGLE SYNC INPUTS -->
                 <div id="input-single" class="fade-in space-y-6">
-                    <div class="flex flex-col gap-6 items-stretch">
+                    <div class="flex flex-col gap-3 items-stretch relative">
                         <!-- Source Card (Lighter Slate-800) -->
                         <div
-                            class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-600 transition-all hover:border-blue-400/50 group">
+                            class="bg-slate-800 rounded-t-3xl rounded-b-xl p-6 shadow-lg border border-slate-600 transition-all hover:border-blue-400/50 group relative z-0">
                             <h2
                                 class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-3 uppercase tracking-wider">
                                 <span
@@ -219,18 +219,21 @@
                         </div>
 
                         <!-- Pulse Arrow (Visual Connector) -->
-                        <div class="flex flex-col items-center justify-center">
-                            <svg id="syncArrow"
-                                class="w-8 h-8 text-slate-600 transition-all duration-500 transform rotate-90"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
+                        <div class="flex items-center justify-center -my-6 z-10 relative pointer-events-none">
+                            <div
+                                class="w-10 h-10 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center shadow-lg">
+                                <svg id="syncArrow"
+                                    class="w-5 h-5 text-slate-400 transition-all duration-500 transform rotate-90"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </div>
                         </div>
 
                         <!-- Destination Card (Lighter Slate-800) -->
                         <div
-                            class="bg-slate-800 rounded-3xl p-6 shadow-lg border border-slate-600 transition-all hover:border-indigo-400/50 group">
+                            class="bg-slate-800 rounded-b-3xl rounded-t-xl p-6 shadow-lg border border-slate-600 transition-all hover:border-indigo-400/50 group relative z-0">
                             <h2
                                 class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-3 uppercase tracking-wider">
                                 <span
@@ -371,31 +374,50 @@
 
                 <!-- BULK SYNC INPUTS -->
                 <div id="input-bulk" class="hidden fade-in space-y-6">
-                    <!-- Default Settings -->
-                    <div class="bg-slate-800 p-6 rounded-3xl border border-slate-600 shadow-lg">
-                        <h3 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-wider">Default
-                            Configuration
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="p-4 bg-slate-700/50 rounded-2xl border border-slate-600">
-                                <h4 class="text-[10px] font-bold text-blue-400 mb-2 uppercase">Source Default</h4>
-                                <div class="grid grid-cols-3 gap-3">
-                                    <input type="text" id="def_src_host"
-                                        class="col-span-2 w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs focus:border-blue-400 outline-none text-white placeholder-slate-400 shadow-inner"
-                                        placeholder="Host">
-                                    <input type="number" id="def_src_port" value="993"
-                                        class="w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs text-center font-mono text-white shadow-inner">
-                                </div>
+
+                    <!-- Default Configuration (Unified Card) -->
+                    <div class="flex flex-col gap-3 items-stretch relative">
+                        <!-- Source Default -->
+                        <div
+                            class="bg-slate-800 rounded-t-3xl rounded-b-xl p-6 shadow-lg border border-slate-600 relative z-0">
+                            <h4
+                                class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Source Default
+                            </h4>
+                            <div class="grid grid-cols-3 gap-3">
+                                <input type="text" id="def_src_host"
+                                    class="col-span-2 w-full px-3 py-3 rounded-xl bg-slate-700 border border-slate-600 text-sm focus:border-blue-400 outline-none text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Host (e.g. imap.gmail.com)">
+                                <input type="number" id="def_src_port" value="993"
+                                    class="w-full px-3 py-3 rounded-xl bg-slate-700 border border-slate-600 text-sm text-center font-mono text-white shadow-inner">
                             </div>
-                            <div class="p-4 bg-slate-700/50 rounded-2xl border border-slate-600">
-                                <h4 class="text-[10px] font-bold text-indigo-400 mb-2 uppercase">Dest Default</h4>
-                                <div class="grid grid-cols-3 gap-3">
-                                    <input type="text" id="def_dest_host"
-                                        class="col-span-2 w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs focus:border-indigo-400 outline-none text-white placeholder-slate-400 shadow-inner"
-                                        placeholder="Host">
-                                    <input type="number" id="def_dest_port" value="993"
-                                        class="w-full px-3 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-xs text-center font-mono text-white shadow-inner">
-                                </div>
+                        </div>
+
+                        <!-- Connector Arrow -->
+                        <div class="flex items-center justify-center -my-6 z-10 relative pointer-events-none">
+                            <div
+                                class="w-8 h-8 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center shadow-lg">
+                                <svg class="w-4 h-4 text-slate-500 transform rotate-90" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Dest Default -->
+                        <div
+                            class="bg-slate-800 rounded-b-3xl rounded-t-xl p-6 shadow-lg border border-slate-600 relative z-0">
+                            <h4
+                                class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Destination Default
+                            </h4>
+                            <div class="grid grid-cols-3 gap-3">
+                                <input type="text" id="def_dest_host"
+                                    class="col-span-2 w-full px-3 py-3 rounded-xl bg-slate-700 border border-slate-600 text-sm focus:border-indigo-400 outline-none text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Host (e.g. imap.office.com)">
+                                <input type="number" id="def_dest_port" value="993"
+                                    class="w-full px-3 py-3 rounded-xl bg-slate-700 border border-slate-600 text-sm text-center font-mono text-white shadow-inner">
                             </div>
                         </div>
                     </div>
@@ -403,73 +425,72 @@
                     <!-- Bulk CSV Input -->
                     <div class="bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-600 flex flex-col">
                         <div class="flex justify-between items-center mb-4">
-                            <div class="text-sm font-bold text-slate-300">CSV Data</div>
+                            <div class="text-sm font-bold text-slate-300 uppercase tracking-wider">CSV Data Payload
+                            </div>
                             <label
                                 class="cursor-pointer text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/20 transition-colors">
                                 <input type="file" id="csvFile" accept=".csv" class="hidden"> Upload File
                             </label>
                         </div>
-                        <textarea id="bulkInput" rows="12"
-                            class="w-full p-4 rounded-xl bg-slate-700 text-slate-300 font-mono text-xs border border-slate-600 leading-relaxed focus:border-blue-400 outline-none resize-none shadow-inner"
+                        <textarea id="bulkInput" rows="10"
+                            class="w-full p-4 rounded-xl bg-slate-700 text-slate-300 font-mono text-xs border border-slate-600 leading-normal focus:border-blue-400 outline-none resize-none shadow-inner"
                             placeholder="user1,pass1,user1_new,pass2"></textarea>
 
                         <!-- Bulk Advanced -->
-                        <div class="mt-4 pt-4 border-t border-slate-600">
+                        <div class="mt-6 pt-6 border-t border-slate-600">
                             <button
-                                class="flex items-center justify-between w-full text-xs font-bold text-slate-400 hover:text-white transition-colors mb-2"
+                                class="flex items-center justify-between w-full text-xs font-bold text-slate-400 hover:text-white transition-colors mb-2 uppercase tracking-wider"
                                 onclick="document.getElementById('bulkAdvConfig').classList.toggle('hidden')">
-                                <span>Bulk Options (Date, Exclude) 🔧</span>
+                                <span>Advanced Options</span>
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
-                            <div id="bulkAdvConfig" class="hidden grid grid-cols-2 gap-3 mt-3">
-                                <div class="col-span-2 flex items-center gap-4 mb-1">
-                                    <div class="flex items-center gap-2">
+                            <div id="bulkAdvConfig" class="hidden grid grid-cols-2 gap-4 mt-4 fade-in">
+                                <div class="col-span-2 flex items-center gap-6">
+                                    <label class="flex items-center gap-2 cursor-pointer select-none">
                                         <input type="checkbox" id="bulkSmartMap" checked
-                                            class="h-4 w-4 rounded border-slate-500 bg-slate-700 text-blue-600">
-                                        <label for="bulkSmartMap" class="text-xs font-bold text-slate-400"
-                                            title="Auto-detect Sent/Trash/Spam folders">Smart Map</label>
-                                    </div>
-                                    <div class="flex items-center gap-2">
+                                            class="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600">
+                                        <span class="text-xs font-bold text-slate-400">Smart Map</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer select-none">
                                         <input type="checkbox" id="bulkDryRun"
-                                            class="h-4 w-4 rounded border-slate-500 bg-slate-700 text-blue-600">
-                                        <label for="bulkDryRun" class="text-xs font-bold text-slate-400">Dry
-                                            Run</label>
-                                    </div>
+                                            class="w-4 h-4 rounded border-slate-500 bg-slate-700 text-blue-600">
+                                        <span class="text-xs font-bold text-slate-400">Dry Run</span>
+                                    </label>
                                 </div>
                                 <input type="date" id="bulkSinceDate"
-                                    class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-xs text-slate-400 outline-none shadow-inner">
+                                    class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-xs text-slate-400 outline-none shadow-inner">
                                 <input type="text" id="bulkExcludeFolders"
-                                    class="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-xs outline-none text-white placeholder-slate-400 shadow-inner"
-                                    placeholder="Exclude Folders (e.g. Trash, Spam)">
+                                    class="w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-xs outline-none text-white placeholder-slate-400 shadow-inner"
+                                    placeholder="Exclude (e.g. Trash, Spam)">
                                 <textarea id="folderMapping" rows="3"
-                                    class="col-span-2 w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-xs outline-none text-white placeholder-slate-400 shadow-inner font-mono"
-                                    placeholder="Folder Mapping (Source:Dest, one per line)&#10;Sent Messages:Sent Items&#10;Drafts:Drafts New"></textarea>
+                                    class="col-span-2 w-full px-4 py-3 rounded-xl bg-slate-700 border border-slate-600 text-xs outline-none text-white placeholder-slate-400 shadow-inner font-mono"
+                                    placeholder="Folder Mapping (Source:Dest)&#10;Sent:Sent Items"></textarea>
                             </div>
                         </div>
 
                         <!-- Bulk Controls -->
                         <div class="mt-6 flex flex-col gap-3">
                             <div
-                                class="flex items-center justify-between bg-slate-900 px-4 py-3 rounded-xl border border-slate-700">
+                                class="flex items-center justify-between bg-slate-900/50 px-4 py-3 rounded-xl border border-slate-700">
                                 <span class="text-xs font-bold text-slate-500 uppercase">Batch Concurrency</span>
                                 <input type="number" id="batchConcurrency" value="3" min="1" max="5"
                                     class="w-12 bg-slate-800 border border-slate-600 rounded text-center text-sm font-bold outline-none text-white focus:border-blue-500">
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <button onclick="parseAndLoad()"
-                                    class="py-3 bg-slate-700 border border-slate-600 text-slate-300 font-bold rounded-xl hover:bg-slate-600 hover:text-white transition-all text-xs uppercase tracking-wider">Preview
+                                    class="py-4 bg-slate-700 border border-slate-600 text-slate-300 font-bold rounded-xl hover:bg-slate-600 hover:text-white transition-all text-xs uppercase tracking-wider">Preview
                                     Jobs</button>
                                 <button onclick="startBatch()" id="btnStartBatch"
-                                    class="py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-500 transition-all text-xs uppercase tracking-wider disabled:opacity-50"
+                                    class="py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-500 transition-all text-xs uppercase tracking-wider disabled:opacity-50"
                                     disabled>Start Batch</button>
                                 <button onclick="stopBatch()" id="btnStopBatch"
-                                    class="hidden col-span-2 py-3 bg-red-500/10 text-red-500 font-bold rounded-xl border border-red-500/20 hover:bg-red-500/20">Stop
+                                    class="hidden col-span-2 py-4 bg-red-500/10 text-red-500 font-bold rounded-xl border border-red-500/20 hover:bg-red-500/20">Stop
                                     All</button>
                                 <button onclick="retryFailed()" id="btnRetryFailed"
-                                    class="hidden col-span-2 py-3 bg-yellow-500/10 text-yellow-500 font-bold rounded-xl border border-yellow-500/20 hover:bg-yellow-500/20 transition-all">Retry
+                                    class="hidden col-span-2 py-4 bg-yellow-500/10 text-yellow-500 font-bold rounded-xl border border-yellow-500/20 hover:bg-yellow-500/20 transition-all">Retry
                                     Failed Jobs ↻</button>
                             </div>
                         </div>
