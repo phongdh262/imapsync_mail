@@ -238,21 +238,16 @@ app.post('/api/sync', async (req, res) => {
     try {
         if (signal.aborted) throw new Error("Stopped by user.");
 
-        // 1. Parallel Connection
-        sendLog(sync_id, res, "Connecting to servers...", false, 0);
-
-        const promises = [];
-        promises.push(withTimeout(clientSrc.connect(), 45000, "Source").then(() => {
-            sendLog(sync_id, res, "Connected to Source...");
-        }));
+        // 1. Sequential Connection (Source first, then Destination)
+        sendLog(sync_id, res, "Connecting to Source...", false, 0);
+        await withTimeout(clientSrc.connect(), 45000, "Source");
+        sendLog(sync_id, res, "Connected to Source.");
 
         if (clientDest) {
-            promises.push(withTimeout(clientDest.connect(), 45000, "Destination").then(() => {
-                sendLog(sync_id, res, "Connected to Destination...");
-            }));
+            sendLog(sync_id, res, "Connecting to Destination...");
+            await withTimeout(clientDest.connect(), 45000, "Destination");
+            sendLog(sync_id, res, "Connected to Destination.");
         }
-
-        await Promise.all(promises);
 
         if (signal.aborted) throw new Error("Stopped by user.");
 
