@@ -755,7 +755,7 @@
             if (!isError) {
                 if (msg.includes('Synced')) content = `<span class="text-blue-400 font-bold">Synced</span> ${msg.replace('Synced', '').replace('->', '<span class="text-slate-500">-></span>')}`;
                 else if (msg.includes('Mapping')) content = `<span class="text-purple-400 font-bold">Mapping</span> ${msg.replace('Mapping', '')}`;
-                else if (msg.includes('Connecting')) content = `<span class="text-yellow-400 font-bold">Connecting</span> ${msg.replace('Connecting', '')}`;
+                else if (msg.includes('Connecting') || msg.includes('Connected')) content = `<span class="text-yellow-400 font-bold">${msg.includes('Connecting') ? 'Connecting' : 'Connected'}</span> ${msg.replace('Connecting', '').replace('Connected', '')}`;
                 else if (msg.includes('Completed') || msg.includes('Success')) content = `<span class="text-green-400 font-bold">✓</span> <span class="text-green-300">${msg}</span>`;
             }
 
