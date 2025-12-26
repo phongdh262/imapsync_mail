@@ -178,6 +178,46 @@ app.post('/api/sync', async (req, res) => {
             return; // End
         }
 
+        // --- SMART FOLDER MAPPING (HEURISTICS) ---
+        if (req.body.smart_map && !dry_run) {
+            sendLog(sync_id, res, "Running Smart Map auto-detection...");
+            const destFoldersList = await clientDest.list(); // List dest folders
+            const destNames = destFoldersList.map(f => f.path);
+
+            const SPECIAL_FOLDERS = {
+                'Sent': ['Sent', 'Sent Items', 'Sent Messages', '[Gmail]/Sent Mail', 'Sent Mail'],
+                'Trash': ['Trash', 'Deleted Items', 'Bin', 'Deleted Messages', '[Gmail]/Trash'],
+                'Drafts': ['Drafts', 'Drafts New', '[Gmail]/Drafts'],
+                'Spam': ['Junk', 'Spam', 'Junk E-mail', '[Gmail]/Spam', 'Bulk Mail']
+            };
+
+            // Helper: Find first matching folder in a list
+            const findMatch = (folders, patterns) => {
+                for (const p of patterns) {
+                    const match = folders.find(f => f.toLowerCase() === p.toLowerCase() || f.endsWith('/' + p));
+                    if (match) return match;
+                }
+                return null;
+            };
+
+            // Helper: Normalize mapping key (strip ending separator if any)
+            const mapObj = req.body.folder_mapping || {};
+
+            for (const [type, patterns] of Object.entries(SPECIAL_FOLDERS)) {
+                const srcMatch = findMatch(targetFolders, patterns);
+                const destMatch = findMatch(destNames, patterns);
+
+                if (srcMatch && destMatch && srcMatch !== destMatch) {
+                    // Only map if not already manually mapped
+                    if (!mapObj[srcMatch]) {
+                        mapObj[srcMatch] = destMatch;
+                        sendLog(sync_id, res, `[Smart Map] Auto-mapped "${srcMatch}" -> "${destMatch}" (${type})`);
+                    }
+                }
+            }
+            req.body.folder_mapping = mapObj; // Update mapping for main loop
+        }
+
         let totalEmails = 0;
         const jobQueue = [];
 
@@ -229,6 +269,16 @@ app.post('/api/sync', async (req, res) => {
 
                 const uids = tasksByFolder[folder];
 
+                // --- FOLDER MAPPING LOGIC ---
+                // If mapping exists for this folder, use it. Otherwise use original name.
+                const destFolder = (req.body.folder_mapping && req.body.folder_mapping[folder])
+                    ? req.body.folder_mapping[folder]
+                    : folder;
+
+                if (folder !== destFolder) {
+                    sendLog(sync_id, res, `>>> Mapping folder: "${folder}" -> "${destFolder}"`);
+                }
+
                 // Lock Source Folder
                 let srcLock;
                 try {
@@ -237,11 +287,11 @@ app.post('/api/sync', async (req, res) => {
                     // Ensure Dest Folder Exists (if not dry run)
                     if (!dry_run) {
                         try {
-                            await clientDest.mailboxOpen(folder); // Checks existence/selects
+                            await clientDest.mailboxOpen(destFolder); // Checks existence/selects
                         } catch (e) {
                             try {
-                                await clientDest.mailboxCreate(folder);
-                                await clientDest.mailboxOpen(folder);
+                                await clientDest.mailboxCreate(destFolder);
+                                await clientDest.mailboxOpen(destFolder);
                             } catch (e2) {
                                 // Fallback to INBOX if cant create
                                 await clientDest.mailboxOpen('INBOX');
@@ -259,12 +309,12 @@ app.post('/api/sync', async (req, res) => {
                             const raw = msg.source;
 
                             if (!dry_run) {
-                                await clientDest.append(folder, raw);
+                                await clientDest.append(destFolder, raw);
                             }
 
                             processedCount++;
                             const progress = Math.round((processedCount / totalEmails) * 100);
-                            sendLog(sync_id, res, `Synced ${folder}:${uid}`, false, progress);
+                            sendLog(sync_id, res, `Synced ${folder}:${uid} -> ${destFolder}`, false, progress);
 
                         } catch (err) {
                             sendLog(sync_id, res, `Err ${folder}:${uid} - ${err.message}`, true);
