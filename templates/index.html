@@ -82,14 +82,25 @@
             </div>
 
             <!-- Navigation Tabs -->
-            <div class="bg-slate-800 p-1.5 rounded-xl border border-slate-600 inline-flex shadow-lg">
-                <button onclick="switchTab('single')" id="tab-single"
-                    class="px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 shadow-md bg-blue-600 text-white shadow-blue-900/20">
-                    Single Sync
-                </button>
-                <button onclick="switchTab('bulk')" id="tab-bulk"
-                    class="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-300">
-                    Bulk Sync (CSV)
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-800 p-1.5 rounded-xl border border-slate-600 inline-flex shadow-lg">
+                    <button onclick="switchTab('single')" id="tab-single"
+                        class="px-6 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 shadow-md bg-blue-600 text-white shadow-blue-900/20">
+                        Single Sync
+                    </button>
+                    <button onclick="switchTab('bulk')" id="tab-bulk"
+                        class="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-300">
+                        Bulk Sync (CSV)
+                    </button>
+                </div>
+                <button onclick="showGuide()"
+                    class="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 rounded-xl transition-colors shadow-lg group"
+                    title="Hướng dẫn sử dụng">
+                    <svg class="w-6 h-6 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                 </button>
             </div>
         </header>
@@ -1055,6 +1066,199 @@
 
         // Init
         restoreSession();
+    </script>
+
+    <!-- GUIDE MODAL (VIETNAMESE) -->
+    <div id="guideModal" class="fixed inset-0 z-50 hidden">
+        <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeGuide()"></div>
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+                class="bg-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden border border-slate-600 fade-in ring-1 ring-white/10">
+                <div class="px-6 py-4 border-b border-slate-600 flex justify-between items-center bg-slate-900/50">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-blue-500/10 text-blue-400 p-1.5 rounded-lg border border-blue-500/20">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                        </span>
+                        <h3 class="font-bold text-slate-200 text-lg">Hướng Dẫn Sử Dụng (User Guide)</h3>
+                    </div>
+                    <button onclick="closeGuide()"
+                        class="text-slate-500 hover:text-white transition-colors bg-slate-700/50 hover:bg-slate-700 rounded-lg p-1">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-0 text-sm text-slate-300">
+                    <div class="grid grid-cols-1 md:grid-cols-3 min-h-full">
+                        <!-- Sidebar -->
+                        <div class="bg-slate-900/50 border-r border-slate-600 p-4 space-y-1">
+                            <button onclick="scrollToSection('sec-intro')"
+                                class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white font-medium transition-colors focus:bg-slate-800 focus:text-blue-400">1.
+                                Giới thiệu chung</button>
+                            <button onclick="scrollToSection('sec-single')"
+                                class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white font-medium transition-colors focus:bg-slate-800 focus:text-blue-400">2.
+                                Single Sync (Đơn)</button>
+                            <button onclick="scrollToSection('sec-bulk')"
+                                class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white font-medium transition-colors focus:bg-slate-800 focus:text-blue-400">3.
+                                Bulk Sync & CSV</button>
+                            <button onclick="scrollToSection('sec-advanced')"
+                                class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white font-medium transition-colors focus:bg-slate-800 focus:text-blue-400">4.
+                                Cấu hình nâng cao</button>
+                            <button onclick="scrollToSection('sec-notes')"
+                                class="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white font-medium transition-colors focus:bg-slate-800 focus:text-blue-400">5.
+                                Lưu ý quan trọng</button>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="col-span-2 p-8 space-y-12 scroll-smooth" id="guideContent">
+
+                            <!-- Intro -->
+                            <section id="sec-intro" class="space-y-4">
+                                <h4 class="text-xl font-bold text-white flex items-center gap-2">
+                                    <span
+                                        class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm">1</span>
+                                    Giới thiệu chung
+                                </h4>
+                                <p class="leading-relaxed text-slate-400">
+                                    **IMAP Sync Pro** là công cụ hỗ trợ chuyển dữ liệu email (migration) từ server này
+                                    sang server khác thông qua giao thức IMAP.
+                                    Công cụ hỗ trợ chạy chạy nền với hiệu suất cao, tự động khôi phục tiến trình nếu
+                                    trình duyệt bị tải lại, và cung cấp báo cáo chi tiết.
+                                </p>
+                            </section>
+
+                            <hr class="border-slate-700/50">
+
+                            <!-- Single Sync -->
+                            <section id="sec-single" class="space-y-4">
+                                <h4 class="text-xl font-bold text-white flex items-center gap-2">
+                                    <span
+                                        class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm">2</span>
+                                    Single Sync (Chạy đơn lẻ)
+                                </h4>
+                                <div class="space-y-3 text-slate-400 leading-relaxed">
+                                    <p>Chế độ này dùng để test hoặc chạy chuyển đổi cho **1 tài khoản duy nhất**.</p>
+                                    <ul class="list-disc pl-5 space-y-2">
+                                        <li><strong class="text-slate-200">Source (Nguồn):</strong> Nhập thông tin
+                                            server cũ (Host, Email, Password). Port mặc định là 993 (SSL).</li>
+                                        <li><strong class="text-slate-200">Destination (Đích):</strong> Nhập thông tin
+                                            server mới.</li>
+                                        <li>Bấm <strong>"Start Migration"</strong> để bắt đầu. Log chi tiết sẽ hiện ở
+                                            cột bên phải.</li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            <hr class="border-slate-700/50">
+
+                            <!-- Bulk Sync -->
+                            <section id="sec-bulk" class="space-y-4">
+                                <h4 class="text-xl font-bold text-white flex items-center gap-2">
+                                    <span
+                                        class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm">3</span>
+                                    Bulk Sync (Chạy hàng loạt)
+                                </h4>
+                                <div class="space-y-4 text-slate-400 leading-relaxed">
+                                    <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+                                        <h5 class="font-bold text-slate-200 mb-2">Định dạng file CSV</h5>
+                                        <p class="mb-2">Bạn có thể nhập trực tiếp hoặc upload file `.csv` không có tiêu
+                                            đề (header). Mỗi dòng là một tài khoản.</p>
+
+                                        <div class="grid gap-4 mt-3">
+                                            <div>
+                                                <div class="text-xs font-bold text-blue-400 uppercase mb-1">Dạng 1: Đơn
+                                                    giản (Dùng chung Host)</div>
+                                                <code
+                                                    class="block bg-slate-950 p-3 rounded-lg font-mono text-xs text-emerald-400 break-all">user1,pass1,user1_new,pass2<br>user2,pass3,user2_new,pass4</code>
+                                                <p class="text-xs mt-1 italic">Hệ thống sẽ dùng Host mặc định bạn điền ở
+                                                    trên.</p>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs font-bold text-indigo-400 uppercase mb-1">Dạng 2:
+                                                    Chi tiết (8 trường)</div>
+                                                <code
+                                                    class="block bg-slate-950 p-3 rounded-lg font-mono text-xs text-yellow-500 break-all">src_host,993,src_user,pass,dest_host,993,dest_user,pass</code>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p>
+                                        Sau khi nhập liệu, bấm <strong>Review Jobs</strong> để lên danh sách chờ. Bấm
+                                        <strong>Start Batch</strong> để chạy.
+                                        Bạn có thể chỉnh số luồng (Concurrency) để chạy song song nhiều tài khoản cùng
+                                        lúc.
+                                    </p>
+                                </div>
+                            </section>
+
+                            <hr class="border-slate-700/50">
+
+                            <!-- Advanced -->
+                            <section id="sec-advanced" class="space-y-4">
+                                <h4 class="text-xl font-bold text-white flex items-center gap-2">
+                                    <span
+                                        class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm">4</span>
+                                    Cấu hình nâng cao
+                                </h4>
+                                <ul class="list-disc pl-5 space-y-2 text-slate-400 leading-relaxed">
+                                    <li><strong class="text-slate-200">Dry Run:</strong> Chạy mô phỏng, không copy dữ
+                                        liệu thật, dùng để kiểm tra kết nối đăng nhập.</li>
+                                    <li><strong class="text-slate-200">Sync from Date:</strong> Chỉ copy email từ ngày
+                                        này trở đi.</li>
+                                    <li><strong class="text-slate-200">Exclude Folders:</strong> Bỏ qua các thư mục
+                                        không cần thiết (VD: Trash, Spam, Junk). Cách nhau bằng dấu phẩy.</li>
+                                </ul>
+                            </section>
+
+                            <hr class="border-slate-700/50">
+
+                            <!-- Notes -->
+                            <section id="sec-notes" class="space-y-4">
+                                <h4 class="text-xl font-bold text-white flex items-center gap-2">
+                                    <span
+                                        class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-sm">5</span>
+                                    Lưu ý quan trọng
+                                </h4>
+                                <div
+                                    class="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-200 text-sm space-y-2">
+                                    <p>⚠️ <strong>Gmail:</strong> Phải bật "2-Step Verification" và tạo <strong>App
+                                            Password</strong> thì mới kết nối được. Mật khẩu đăng nhập thường sẽ không
+                                        hoạt động.</p>
+                                    <p>⚠️ <strong>Outlook/Office365:</strong> Một số tổ chức chặn IMAP, cần liên hệ
+                                        admin để bật.</p>
+                                    <p>⚠️ <strong>Không đóng tab trình duyệt:</strong> Mặc dù hệ thống có cơ chế khôi
+                                        phục, nhưng để ổn định nhất, hãy giữ tab trình duyệt mở khi đang chạy Batch lớn.
+                                    </p>
+                                </div>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 border-t border-slate-600 bg-slate-900/50 flex justify-end">
+                    <button onclick="closeGuide()"
+                        class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-all text-sm">Đã
+                        hiểu / Got it</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showGuide() {
+            document.getElementById('guideModal').classList.remove('hidden');
+        }
+        function closeGuide() {
+            document.getElementById('guideModal').classList.add('hidden');
+        }
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     </script>
 </body>
 
