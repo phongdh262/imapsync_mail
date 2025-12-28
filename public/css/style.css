@@ -1,0 +1,223 @@
+/* ============================================
+   IMAP Sync Pro - Custom Styles
+   ============================================ */
+
+/* Typography */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.font-mono {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Glass Effect */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #64748b;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse-slow {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+.fade-in-fast {
+    animation: fadeIn 0.15s ease-out;
+}
+
+.pulse-active {
+    animation: pulse-slow 2s infinite;
+    color: #60a5fa;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   Custom Form Elements
+   ============================================ */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    background: #334155;
+    border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -4px;
+    width: 16px;
+    height: 16px;
+    background: #3b82f6;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    background: #60a5fa;
+}
+
+/* Checkbox Styling (Custom) */
+input[type="checkbox"].peer:checked + svg {
+    opacity: 1;
+}
+
+/* ============================================
+   Table Styling
+   ============================================ */
+.job-table-row {
+    transition: background-color 0.2s ease;
+}
+
+.job-table-row:hover {
+    background-color: rgba(15, 23, 42, 0.5);
+}
+
+/* ============================================
+   Modal Overlay
+   ============================================ */
+.modal-overlay {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+/* ============================================
+   Status Badges
+   ============================================ */
+.badge-pending {
+    background: rgba(51, 65, 85, 0.8);
+    color: #94a3b8;
+    border-color: rgba(71, 85, 105, 0.5);
+}
+
+.badge-running {
+    background: rgba(29, 78, 216, 0.3);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.badge-done {
+    background: rgba(6, 95, 70, 0.3);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.badge-error {
+    background: rgba(127, 29, 29, 0.3);
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* ============================================
+   Log Terminal Styling
+   ============================================ */
+.log-entry {
+    margin-bottom: 0.25rem;
+    border-left: 2px solid #334155;
+    padding-left: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    transition: background-color 0.2s;
+}
+
+.log-entry:hover {
+    background-color: rgba(30, 41, 59, 0.3);
+}
+
+.log-entry.error {
+    color: #f87171;
+    border-left-color: rgba(248, 113, 113, 0.5);
+}
+
+.log-entry.success {
+    color: #34d399;
+}
+
+.log-entry .keyword-synced {
+    color: #60a5fa;
+    font-weight: bold;
+}
+
+.log-entry .keyword-connecting {
+    color: #fbbf24;
+    font-weight: bold;
+}
+
+.log-entry .keyword-completed {
+    color: #34d399;
+    font-weight: bold;
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+@media (max-width: 768px) {
+    .log-entry {
+        font-size: 0.65rem;
+    }
+}
